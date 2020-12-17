@@ -207,6 +207,10 @@ TEMPLATE.innerHTML = `
       margin-bottom: .5em;
       margin-top: -8px;
     }
+    .stack-layout .tab:last-child {
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
     .stack-layout .tab:first-child {
       border-top-left-radius: 36px;
       border-top-right-radius: 36px
@@ -317,11 +321,14 @@ TEMPLATE.innerHTML = `
       visibility: visible;
     }
     .buttons {
-      display: flex;
+      display: none;
       justify-content: space-between;
       padding-left: 1em;
       padding-right: 1em;
       padding-bottom: .5em;
+    }
+    .buttons.visible {
+        display: flex;
     }
     .button {
       display: inline-block;
@@ -534,7 +541,7 @@ TEMPLATE.innerHTML = `
     .cm-s-tomorrow-night .CodeMirror-matchingbracket { text-decoration: underline; color: white !important; }    
 
   </style>
-  <slot name="style"></slot>
+  <slot name="style"></slot><slot name="preamble"></slot>
 `;
 const CONSOLE_MAX_LINES = 1000;
 // interface Window {
@@ -554,16 +561,13 @@ class CodePlaygroundElement extends HTMLElement {
         const container = document.createElement('div');
         this.containerId = randomId();
         container.id = this.containerId;
-        const containerContent = `
-      <div class='original-content'><slot name="html"></slot><slot name="css"></slot><slot name="javascript"></slot></div>
-      <div class='source'><div class='tabs'></div>
-      <div class='buttons'>
-        <button id='reset-button' class='button' disabled><svg aria-hidden="true" focusable="false" data-prefix="far" data-icon="history" class="svg-inline--fa fa-history fa-w-16" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="currentColor" d="M504 255.532c.252 136.64-111.182 248.372-247.822 248.468-64.014.045-122.373-24.163-166.394-63.942-5.097-4.606-5.3-12.543-.443-17.4l16.96-16.96c4.529-4.529 11.776-4.659 16.555-.395C158.208 436.843 204.848 456 256 456c110.549 0 200-89.468 200-200 0-110.549-89.468-200-200-200-55.52 0-105.708 22.574-141.923 59.043l49.091 48.413c7.641 7.535 2.305 20.544-8.426 20.544H26.412c-6.627 0-12-5.373-12-12V45.443c0-10.651 12.843-16.023 20.426-8.544l45.097 44.474C124.866 36.067 187.15 8 256 8c136.811 0 247.747 110.781 248 247.532zm-167.058 90.173l14.116-19.409c3.898-5.36 2.713-12.865-2.647-16.763L280 259.778V116c0-6.627-5.373-12-12-12h-24c-6.627 0-12 5.373-12 12v168.222l88.179 64.13c5.36 3.897 12.865 2.712 16.763-2.647z"></path></svg>Reset</button>
-        <button id='run-button' class='button'><svg aria-hidden="true" focusable="false" data-prefix="far" data-icon="play" class="svg-inline--fa fa-play fa-w-14" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path fill="currentColor" d="M424.4 214.7L72.4 6.6C43.8-10.3 0 6.1 0 47.9V464c0 37.5 40.7 60.1 72.4 41.3l352-208c31.4-18.5 31.5-64.1 0-82.6zM48 453.5v-395c0-4.6 5.1-7.5 9.1-5.2l334.2 197.5c3.9 2.3 3.9 8 0 10.3L57.1 458.7c-4 2.3-9.1-.6-9.1-5.2z"></path></svg>Run</button>
-      </div></div>
-      <div class='result'>
-          <div class='output'></div>
-      </div></div>`;
+        const containerContent = `<div class='original-content'><slot name="html"></slot><slot name="css"></slot><slot name="javascript"></slot></div>
+<div class='source'><div class='tabs'></div>
+<div class='buttons visible'>
+<button id='reset-button' class='button' disabled><svg aria-hidden="true" focusable="false" data-prefix="far" data-icon="history" class="svg-inline--fa fa-history fa-w-16" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="currentColor" d="M504 255.532c.252 136.64-111.182 248.372-247.822 248.468-64.014.045-122.373-24.163-166.394-63.942-5.097-4.606-5.3-12.543-.443-17.4l16.96-16.96c4.529-4.529 11.776-4.659 16.555-.395C158.208 436.843 204.848 456 256 456c110.549 0 200-89.468 200-200 0-110.549-89.468-200-200-200-55.52 0-105.708 22.574-141.923 59.043l49.091 48.413c7.641 7.535 2.305 20.544-8.426 20.544H26.412c-6.627 0-12-5.373-12-12V45.443c0-10.651 12.843-16.023 20.426-8.544l45.097 44.474C124.866 36.067 187.15 8 256 8c136.811 0 247.747 110.781 248 247.532zm-167.058 90.173l14.116-19.409c3.898-5.36 2.713-12.865-2.647-16.763L280 259.778V116c0-6.627-5.373-12-12-12h-24c-6.627 0-12 5.373-12 12v168.222l88.179 64.13c5.36 3.897 12.865 2.712 16.763-2.647z"></path></svg>Reset</button>
+<button id='run-button' class='button'><svg aria-hidden="true" focusable="false" data-prefix="far" data-icon="play" class="svg-inline--fa fa-play fa-w-14" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path fill="currentColor" d="M424.4 214.7L72.4 6.6C43.8-10.3 0 6.1 0 47.9V464c0 37.5 40.7 60.1 72.4 41.3l352-208c31.4-18.5 31.5-64.1 0-82.6zM48 453.5v-395c0-4.6 5.1-7.5 9.1-5.2l334.2 197.5c3.9 2.3 3.9 8 0 10.3L57.1 458.7c-4 2.3-9.1-.6-9.1-5.2z"></path></svg>Run</button>
+</div></div>
+<div class='result'><div class='output'></div></div></div>`;
         container.innerHTML = containerContent;
         this.shadowRoot.appendChild(container);
         // Add event handler for "run" and "reset" button
@@ -593,10 +597,23 @@ class CodePlaygroundElement extends HTMLElement {
         });
     }
     static get observedAttributes() {
-        return ['activetab', 'layout', 'showlinenumbers'];
+        return [
+            'active-tab',
+            'layout',
+            'show-line-numbers',
+            'button-bar-visibility',
+        ];
+    }
+    get outputStylesheets() {
+        if (!this.hasAttribute('output-stylesheets'))
+            return [];
+        return this.getAttribute('output-stylesheets').split(' ');
+    }
+    set outputStylesheets(value) {
+        this.setAttribute('output-stylesheets', value.join(' '));
     }
     attributeChangedCallback(name, oldValue, newValue) {
-        if (name === 'activetab' && oldValue !== newValue) {
+        if (name === 'active-tab' && oldValue !== newValue) {
             this.activateTab(newValue);
         }
         else if (name === 'layout' && oldValue !== newValue) {
@@ -607,11 +624,23 @@ class CodePlaygroundElement extends HTMLElement {
                 .querySelector(':host > div')
                 .classList.toggle('stack-layout', newValue === 'stack');
         }
-        else if (name === 'showlinenumbers' && oldValue !== newValue) {
+        else if (name === 'show-line-numbers' && oldValue !== newValue) {
             this.shadowRoot
                 .querySelectorAll('textarea + .CodeMirror')
                 .forEach((x) => { var _a; return (_a = x === null || x === void 0 ? void 0 : x['CodeMirror']) === null || _a === void 0 ? void 0 : _a.setLineNumbers(this.showLineNumbers); });
         }
+    }
+    get buttonBarVisibility() {
+        var _a;
+        return (_a = this.getAttribute('button-bar-visibility')) !== null && _a !== void 0 ? _a : 'auto';
+    }
+    set buttonBarVisibility(value) {
+        this.setAttribute('button-bar-visibility', value);
+    }
+    get buttonBarVisible() {
+        return this.shadowRoot
+            .querySelector('.buttons')
+            .classList.contains('visible');
     }
     connectedCallback() {
         const styleSlot = this.shadowRoot.querySelector('slot[name=style]');
@@ -623,6 +652,12 @@ class CodePlaygroundElement extends HTMLElement {
             const style = document.createElement('style');
             style.textContent = styleContent;
             this.shadowRoot.appendChild(style);
+        }
+        if (this.buttonBarVisibility === 'auto' ||
+            this.buttonBarVisibility === 'hidden') {
+            this.shadowRoot
+                .querySelector('.buttons')
+                .classList.remove('visible');
         }
     }
     // The content of the code section has changed. Rebuild the tabs
@@ -673,15 +708,28 @@ class CodePlaygroundElement extends HTMLElement {
         const tabs = shadowRoot.querySelectorAll('.tab');
         if (tabs.length <= 1) {
             tabs.forEach((x) => (x.querySelector('.tab > label').style.display = 'none'));
-            const visibleTab = shadowRoot.querySelector('.tab .content');
-            visibleTab.style.marginTop = '8px';
-            visibleTab.style.borderTopLeftRadius = '8px';
-            visibleTab.style.borderTopRightRadius = '8px';
         }
         else {
             shadowRoot.querySelectorAll('.tab label').forEach((x) => {
                 x.addEventListener('click', activateTab);
             });
+        }
+        const firstTab = tabs[0];
+        const lastTab = tabs[tabs.length - 1];
+        if (tabs.length > 1) {
+            firstTab.style.marginTop = '8px';
+        }
+        else {
+            const tabContent = firstTab.querySelector('.content');
+            tabContent.style.borderTopLeftRadius = '8px';
+            tabContent.style.borderTopRightRadius = '8px';
+        }
+        if (!this.buttonBarVisible) {
+            const tabContent = lastTab.querySelector('.content');
+            tabContent.style.borderBottomLeftRadius = '8px';
+            tabContent.style.borderBottomRightRadius = '8px';
+            lastTab.style.marginBottom = '0';
+            lastTab.style.paddingBottom = '0';
         }
         // 4. Setup editors
         if (typeof CodeMirror !== 'undefined') {
@@ -757,9 +805,8 @@ class CodePlaygroundElement extends HTMLElement {
         else {
             htmlContent = (_b = (_a = section.querySelector('textarea[data-language="html"]')) === null || _a === void 0 ? void 0 : _a.value) !== null && _b !== void 0 ? _b : '';
         }
-        section.querySelector('.output').innerHTML = htmlContent;
         // If the HTML content contains any <script> tags, extract them
-        const scriptTags = htmlContent.match(/<script.*>.*<\/script>/g);
+        const scriptTags = htmlContent.match(/<script.*>.*?<\/script>/g);
         scriptTags === null || scriptTags === void 0 ? void 0 : scriptTags.forEach((x) => {
             const m = x.match(/<script([^>]*?)>(.*)<\/script>/);
             const regex = new RegExp('[\\s\\r\\t\\n]*([a-z0-9\\-_]+)[\\s\\r\\t\\n]*=[\\s\\r\\t\\n]*([\'"])((?:\\\\\\2|(?!\\2).)*)\\2', 'ig');
@@ -779,6 +826,21 @@ class CodePlaygroundElement extends HTMLElement {
                 this.pseudoConsole().error(err.message);
             }
         });
+        try {
+            this.outputStylesheets.forEach((x) => {
+                const href = x.trim();
+                if (href.length > 0) {
+                    htmlContent =
+                        `<link rel="stylesheet" href="${href}"></link>` +
+                            htmlContent;
+                }
+            });
+            section.querySelector('.output').innerHTML = htmlContent;
+        }
+        catch (e) {
+            // If there's a syntax error in the markup, catch it here
+            this.pseudoConsole().error(e.message);
+        }
         // Add a new script tag
         const jsEditor = section.querySelector('textarea[data-language="javascript"] + .CodeMirror');
         let jsContent = '';
@@ -822,6 +884,16 @@ class CodePlaygroundElement extends HTMLElement {
     }
     editorContentChanged() {
         this.shadowRoot.querySelector('#reset-button').disabled = false;
+        if (this.buttonBarVisibility === 'auto') {
+            this.shadowRoot.querySelector('.buttons').classList.add('visible');
+            const tabs = this.shadowRoot.querySelectorAll('.tab');
+            const lastTab = tabs[tabs.length - 1];
+            const tabContent = lastTab.querySelector('.content');
+            tabContent.style.borderBottomLeftRadius = '0';
+            tabContent.style.borderBottomRightRadius = '0';
+            lastTab.style.marginBottom = '0.5em';
+            lastTab.style.paddingBottom = '0.5em';
+        }
     }
     resetPlayground() {
         const slots = this.shadowRoot.querySelectorAll('.original-content slot');
@@ -939,7 +1011,7 @@ class CodePlaygroundElement extends HTMLElement {
             return '';
         });
         // Important: keep the ${script} on a separate line. The content could
-        // be "// a comment" which would result in the script failign to parse
+        // be "// a comment" which would result in the script failing to parse
         return (imports
             .map((x) => {
             if (this.moduleMap[x[2]]) {
@@ -949,7 +1021,7 @@ class CodePlaygroundElement extends HTMLElement {
         })
             .join('\n') +
             `const shadowRoot${jsID} = document.querySelector("#${this.id}").shadowRoot;` +
-            `const container${jsID} = shadowRoot${jsID}.getElementById("${this.containerId}");` +
+            `const container${jsID} = shadowRoot${jsID}.querySelector("#${this.containerId} div.output");` +
             'try{\n' +
             script +
             `\n} catch(err) { shadowRoot${jsID}.host.pseudoConsole().catch(err) }`);
@@ -957,32 +1029,29 @@ class CodePlaygroundElement extends HTMLElement {
     //
     // Property/attributes
     //
-    // 'activetab' is the name of the currently visible tab
+    // 'active-tab' is the name of the currently visible tab
     get activeTab() {
-        return this.hasAttribute('activetab')
-            ? this.getAttribute('activetab')
-            : '';
+        var _a;
+        return (_a = this.getAttribute('active-tab')) !== null && _a !== void 0 ? _a : '';
     }
     set activeTab(val) {
         if (val) {
-            this.setAttribute('activetab', val);
+            this.setAttribute('active-tab', val);
         }
         else {
-            this.removeAttribute('activetab');
+            this.removeAttribute('active-tab');
         }
     }
     // 'showlinenumbers' is true if line numbers should be displayed
     get showLineNumbers() {
-        return this.hasAttribute('showlinenumbers')
-            ? this.getAttribute('showlinenumbers') === 'true'
-            : true;
+        return this.hasAttribute('show-line-numbers');
     }
     set showLineNumbers(val) {
         if (val) {
-            this.setAttribute('showlinenumbers', val ? 'true' : 'false');
+            this.setAttribute('show-line-numbers', '');
         }
         else {
-            this.removeAttribute('showlinenumbers');
+            this.removeAttribute('show-line-numbers');
         }
     }
 }
@@ -1123,8 +1192,6 @@ function asString(depth, value, options = {}) {
     if (value instanceof Element) {
         let result = `<${value.localName}`;
         let lineCount = 1;
-        if (value.className)
-            result += ` class="${value.className}"`;
         Array.from(value.attributes).forEach((x) => {
             result +=
                 ' ' +

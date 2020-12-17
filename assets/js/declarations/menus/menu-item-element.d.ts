@@ -1,19 +1,21 @@
-export declare class UIMenuItemElement extends HTMLElement {
-    static get observedAttributes(): string[];
-    get checked(): boolean;
-    set checked(val: boolean);
-    get disabled(): boolean;
-    set disabled(val: boolean);
-    get active(): boolean;
-    set active(val: boolean);
-    get type(): string;
-    set type(val: string);
+import { UIElement } from '../common/ui-element';
+import { MenuItem } from './menu-base';
+/**
+ * Each `UIMenuItemElement` is wrapped inside a `<li>` tag.
+ * A `UIMenuItemElement` represents the label part of a menu item.
+ * Other elements such as the checkmark and the submenu indicator
+ * are rendered by the menu container.
+ */
+export declare class UIMenuItemElement extends UIElement {
+    private _menuItem;
+    set menuItem(value: MenuItem);
+    get menuItem(): MenuItem;
     constructor();
 }
 export default UIMenuItemElement;
 declare global {
     /** @internal */
-    interface Window {
+    export interface Window {
         UIMenuItemElement: typeof UIMenuItemElement;
     }
 }
