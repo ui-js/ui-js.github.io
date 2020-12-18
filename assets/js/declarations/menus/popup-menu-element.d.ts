@@ -5,6 +5,7 @@ export declare class UIPopupMenuElement extends UIElement {
     private rootMenu;
     private templateMenuItems;
     position: 'leading' | 'trailing' | 'left' | 'end';
+    private _savedTransform;
     constructor(menuItems?: MenuItemTemplate[]);
     set menuItems(menuItems: MenuItemTemplate[]);
     get menuItems(): MenuItemTemplate[];

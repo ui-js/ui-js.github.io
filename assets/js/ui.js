@@ -579,14 +579,17 @@ ul.menu-container > li[aria-haspopup=true].active::after {
 
     class Scrim {
         /**
-         * - If `options.dismissOnClick` is true, the scrim is dismissed if the
+         * - If `options.preventOverlayClose` is false, the scrim is closed if the
          * user clicks on the scrim. That's the behavior for menus, for example.
-         * - `onHide()` is called when the scrim is being hidden
+         * When you need a fully modal situation until the user has made an
+         * explicit choice (validating cookie usage, for example), set
+         * `preventOverlayClose` to true.
+         * - `onClose()` is called when the scrim is being closed
          * -
          */
         constructor(options) {
             var _a, _b;
-            this.dismissOnClick = (_a = options === null || options === void 0 ? void 0 : options.dismissOnClick) !== null && _a !== void 0 ? _a : false;
+            this.preventOverlayClose = (_a = options === null || options === void 0 ? void 0 : options.preventOverlayClose) !== null && _a !== void 0 ? _a : false;
             this.translucent = (_b = options === null || options === void 0 ? void 0 : options.translucent) !== null && _b !== void 0 ? _b : false;
             this.state = 'closed';
         }
@@ -604,7 +607,7 @@ ul.menu-container > li[aria-haspopup=true].active::after {
             el.style.zIndex = '9999';
             el.style.outline = 'none';
             if (this.translucent) {
-                el.style.background = 'rgba(255 255 255 .2)';
+                el.style.background = 'rgba(255, 255, 255, .2)';
                 el.style['backdropFilter'] = 'contrast(40%)';
             }
             else {
@@ -613,7 +616,7 @@ ul.menu-container > li[aria-haspopup=true].active::after {
             this._element = el;
             return el;
         }
-        show(options) {
+        open(options) {
             var _a;
             if (this.state !== 'closed')
                 return;
@@ -638,13 +641,13 @@ ul.menu-container > li[aria-haspopup=true].active::after {
             }
             this.state = 'open';
         }
-        hide() {
+        close() {
             var _a, _b;
             if (this.state !== 'open')
                 return;
             this.state = 'closing';
-            if (typeof this.onHide === 'function')
-                this.onHide();
+            if (typeof this.onClose === 'function')
+                this.onClose();
             const el = this.element;
             el.removeEventListener('click', this);
             document.removeEventListener('touchmove', this, false);
@@ -660,21 +663,21 @@ ul.menu-container > li[aria-haspopup=true].active::after {
             this.state = 'closed';
         }
         handleEvent(ev) {
-            if (ev.target === this._element &&
-                ev.type === 'click' &&
-                this.dismissOnClick) {
-                this.hide();
-                ev.preventDefault();
-                ev.stopPropagation();
-                return;
-            }
-            else if (ev.target === document &&
-                (ev.type === 'touchmove' || ev.type === 'scroll')) {
-                // This is an attempt at scrolling on a touch-device
-                this.hide();
-                ev.preventDefault();
-                ev.stopPropagation();
-                return;
+            if (!this.preventOverlayClose) {
+                if (ev.target === this._element && ev.type === 'click') {
+                    this.close();
+                    ev.preventDefault();
+                    ev.stopPropagation();
+                    return;
+                }
+                else if (ev.target === document &&
+                    (ev.type === 'touchmove' || ev.type === 'scroll')) {
+                    // This is an attempt at scrolling on a touch-device
+                    this.close();
+                    ev.preventDefault();
+                    ev.stopPropagation();
+                    return;
+                }
             }
         }
     }
@@ -1707,10 +1710,7 @@ ul.menu-container > li[aria-haspopup=true].active::after {
             this.currentKeyboardModifiers = options === null || options === void 0 ? void 0 : options.keyboardModifiers;
             this.typingBuffer = '';
             this.state = 'closed';
-            this._scrim = new Scrim({
-                dismissOnClick: true,
-                onHide: () => this.hide(),
-            });
+            this._scrim = new Scrim({ onClose: () => this.hide() });
         }
         /**
          * The currently active menu: could be the root menu or a submenu
@@ -1871,7 +1871,7 @@ ul.menu-container > li[aria-haspopup=true].active::after {
             scrim.addEventListener('keydown', this);
             scrim.addEventListener('keyup', this);
             scrim.addEventListener('pointermove', this);
-            this._scrim.show({ root });
+            this._scrim.open({ root });
         }
         disconnectScrim() {
             const scrim = this.scrim;
@@ -1880,7 +1880,7 @@ ul.menu-container > li[aria-haspopup=true].active::after {
             scrim.removeEventListener('keydown', this);
             scrim.removeEventListener('keyup', this);
             scrim.removeEventListener('pointermove', this);
-            this._scrim.hide();
+            this._scrim.close();
         }
         get rootMenu() {
             // I AM THE ONE WHO KNOCKS
@@ -2182,18 +2182,14 @@ ul.menu-container > li[aria-haspopup=true].active::after {
          * @internal
          */
         handleEvent(event) {
-            var _a;
             if (event.type === 'keydown' && event.target === this.parentElement) {
                 const evt = event;
                 if (evt.code === 'Return' || evt.code === 'Enter') {
-                    const bounds = (_a = this.parentElement) === null || _a === void 0 ? void 0 : _a.getBoundingClientRect();
-                    if (bounds) {
-                        this.show({
-                            keyboardModifiers: keyboardModifiersFromEvent(evt),
-                        });
-                        event.preventDefault();
-                        event.stopPropagation();
-                    }
+                    this.show({
+                        keyboardModifiers: keyboardModifiersFromEvent(evt),
+                    });
+                    event.preventDefault();
+                    event.stopPropagation();
                 }
             }
             else if (event.type === 'pointerdown') {
@@ -2256,7 +2252,9 @@ ul.menu-container > li[aria-haspopup=true].active::after {
          * trigger it on click of an item).
          */
         show(options) {
-            var _a, _b, _c;
+            var _a, _b;
+            if (!this.parentElement)
+                return;
             if (!this.rootMenu) {
                 // Import inline (in the component) style sheet
                 this.importStyle();
@@ -2271,15 +2269,26 @@ ul.menu-container > li[aria-haspopup=true].active::after {
                 });
             }
             this.style.display = 'inline-block';
-            const bounds = (_a = this.parentElement) === null || _a === void 0 ? void 0 : _a.getBoundingClientRect();
+            // This is yucky...
+            // The 'fixed' display mode (used by the scrim to position itself over
+            // the viewport) becomes 'relative' when a transform is specified
+            // on a parent element in WebKit and Chromium.
+            // See https://stackoverflow.com/revisions/15256339/2
+            // So we have to remove any transform that might be present to prevent
+            // the scrim from being displayed incorrectly.
+            this._savedTransform = window.getComputedStyle(this.parentElement).transform;
+            if (this._savedTransform !== 'none') {
+                this.parentElement.style.transform = 'none';
+            }
+            const bounds = this.parentElement.getBoundingClientRect();
             if (this.rootMenu.show({
                 ...options,
                 location: [
-                    getEdge(bounds, (_b = this.position) !== null && _b !== void 0 ? _b : 'leading', this.computedDir),
+                    getEdge(bounds, (_a = this.position) !== null && _a !== void 0 ? _a : 'leading', this.computedDir),
                     bounds.bottom,
                 ],
                 alternateLocation: [
-                    getOppositeEdge(bounds, (_c = this.position) !== null && _c !== void 0 ? _c : 'leading', this.computedDir),
+                    getOppositeEdge(bounds, (_b = this.position) !== null && _b !== void 0 ? _b : 'leading', this.computedDir),
                     bounds.bottom,
                 ],
                 parent: this.shadowRoot,
@@ -2305,6 +2314,9 @@ ul.menu-container > li[aria-haspopup=true].active::after {
             var _a;
             (_a = this.rootMenu) === null || _a === void 0 ? void 0 : _a.hide();
             this.style.display = 'none';
+            if (this._savedTransform !== 'none') {
+                this.parentElement.style.transform = this._savedTransform;
+            }
         }
     }
     if (!window.customElements.get('ui-popup-menu')) {

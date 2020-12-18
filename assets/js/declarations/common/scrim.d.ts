@@ -1,29 +1,32 @@
 export declare class Scrim {
     private _element;
-    private dismissOnClick;
-    private onHide;
+    private preventOverlayClose;
+    private onClose;
     private savedOverflow;
     private savedMarginRight;
     private savedActiveElement;
     private state;
     private translucent;
     /**
-     * - If `options.dismissOnClick` is true, the scrim is dismissed if the
+     * - If `options.preventOverlayClose` is false, the scrim is closed if the
      * user clicks on the scrim. That's the behavior for menus, for example.
-     * - `onHide()` is called when the scrim is being hidden
+     * When you need a fully modal situation until the user has made an
+     * explicit choice (validating cookie usage, for example), set
+     * `preventOverlayClose` to true.
+     * - `onClose()` is called when the scrim is being closed
      * -
      */
     constructor(options?: {
         translucent?: boolean;
-        dismissOnClick?: boolean;
-        onHide?: () => void;
+        preventOverlayClose?: boolean;
+        onClose?: () => void;
     });
     get element(): HTMLElement;
-    show(options: {
+    open(options: {
         root?: Node;
         child?: HTMLElement;
     }): void;
-    hide(): void;
+    close(): void;
     handleEvent(ev: Event): void;
 }
 export declare function getOppositeEffectivePos(pos: number, length: number, placement: 'start' | 'end' | 'middle' | 'left' | 'right' | 'top' | 'bottom', dir: 'ltr' | 'rtl'): number;
