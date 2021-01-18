@@ -23,7 +23,7 @@
         &lt;ui-menu-item&gt;Red&lt;/ui-menu-item&gt;
         &lt;ui-menu-item&gt;Green&lt;/ui-menu-item&gt;
         &lt;ui-menu-item&gt;Blue&lt;/ui-menu-item&gt;
-        &lt;ui-menu-item separator&gt;&lt;/ui-menu-item&gt;
+        &lt;ui-menu-item divider&gt;&lt;/ui-menu-item&gt;
         &lt;ui-menu-item&gt;White&lt;/ui-menu-item&gt;
         &lt;ui-menu-item&gt;Gray&lt;/ui-menu-item&gt;
         &lt;ui-menu-item&gt;Black&lt;/ui-menu-item&gt;
@@ -58,7 +58,7 @@
                 { &quot;label&quot;: &quot;Bold&quot; },
                 { &quot;label&quot;: &quot;Italic&quot; },
                 { &quot;label&quot;: &quot;Underline&quot; },
-                { &quot;type&quot;: &quot;separator&quot; },
+                { &quot;type&quot;: &quot;divider&quot; },
                 { &quot;label&quot;: &quot;Red&quot; },
                 { &quot;label&quot;: &quot;Green&quot; },
                 { &quot;label&quot;: &quot;Blue&quot; },
@@ -103,7 +103,7 @@ const menu = new UIContextMenuElement([
         id: &#039;apply-underline&#039;,
         onSelect: (item) =&gt; console.log(&#039;onSelect hook:&#039;, item.id),
     },
-    { type: &#039;separator&#039; },
+    { type: &#039;divider&#039; },
     { label: &#039;Red&#039;, data: { color: &#039;#ff0000&#039; } },
     { label: &#039;Green&#039;, data: { color: &#039;#00ff00&#039; } },
     { label: &#039;Blue&#039;, data: { color: &#039;#0000ff&#039; } },
@@ -151,7 +151,7 @@ document.querySelector(&#039;.zebra-zone&#039;).appendChild(menu);
                         { &quot;label&quot;: &quot;600%&quot; }
                     ]
                 },
-                { &quot;type&quot;: &quot;separator&quot;},
+                { &quot;type&quot;: &quot;divider&quot;},
                 { &quot;label&quot;: &quot;Bold&quot; }, 
                 { &quot;label&quot;: &quot;Italic&quot; }, 
                 { &quot;label&quot;: &quot;Underline&quot; }
@@ -193,7 +193,7 @@ document.querySelector(&#039;.zebra-zone&#039;).appendChild(menu);
                 { &quot;label&quot;: &quot;Outline&quot;, 
                     &quot;disabled&quot;: true
                 },
-                { &quot;type&quot;: &quot;separator&quot; },
+                { &quot;type&quot;: &quot;divider&quot; },
                 { &quot;label&quot;: &quot;Small&quot; },
                 { &quot;label&quot;: &quot;Medium&quot;,
                     &quot;checked&quot;: true 
@@ -302,7 +302,7 @@ document.querySelector(&#039;ui-context-menu&#039;).addEventListener(&#039;selec
         &lt;ui-menu-item style=&quot;background:#bd0865&quot;&gt;&lt;/ui-menu-item&gt;
         &lt;ui-menu-item style=&quot;background:#ed40d0&quot;&gt;&lt;/ui-menu-item&gt;
         &lt;ui-menu-item style=&quot;background:#ed7f5a&quot;&gt;&lt;/ui-menu-item&gt;
-        &lt;ui-menu-item separator&gt;&lt;/ui-menu-item&gt;
+        &lt;ui-menu-item divider&gt;&lt;/ui-menu-item&gt;
         &lt;ui-menu-item style=&quot;background:#18cc48&quot;&gt;&lt;/ui-menu-item&gt;
         &lt;ui-menu-item style=&quot;background:#6bed5a&quot;&gt;&lt;/ui-menu-item&gt;
         &lt;ui-menu-item style=&quot;background:#327aad&quot;&gt;&lt;/ui-menu-item&gt;

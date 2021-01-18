@@ -1,11 +1,11 @@
 import { KeyboardModifiers } from '../common/events';
 import { UIElement } from '../common/ui-element';
 import { MenuInterface, MenuItem, RootMenuInterface } from './menu-base';
-import { UIMenuItemElement } from './menu-item-element';
-import { UISubmenuElement } from './submenu-element';
+import { UIMenuItem } from './menu-item-element';
+import { UISubmenu } from './submenu-element';
 export declare type MenuItemTemplate = {
     onSelect?: (ev: CustomEvent<MenuSelectEvent>) => void;
-    type?: 'normal' | 'separator' | 'submenu' | 'checkbox' | 'radio';
+    type?: 'normal' | 'divider' | 'submenu' | 'checkbox' | 'radio';
     className?: string;
     label?: string | ((item: MenuItemTemplate, keyboardModifiers?: KeyboardModifiers) => string);
     ariaLabel?: string | ((item: MenuItemTemplate, keyboardModifiers?: KeyboardModifiers) => string);
@@ -114,8 +114,8 @@ export declare class Menu implements MenuInterface {
      * or show() on the submenu.
      */
     set openSubmenu(submenu: MenuInterface);
-    appendMenuItem(menuItem: MenuItemTemplate | UIMenuItemElement, keyboardModifiers?: KeyboardModifiers): void;
-    insertMenuItem(pos: number, menuItem: MenuItemTemplate | UIMenuItemElement, keyboardModifiers?: KeyboardModifiers): void;
+    appendMenuItem(menuItem: MenuItemTemplate | UIMenuItem, keyboardModifiers?: KeyboardModifiers): void;
+    insertMenuItem(pos: number, menuItem: MenuItemTemplate | UIMenuItem, keyboardModifiers?: KeyboardModifiers): void;
 }
 export declare function evalToBoolean(item: MenuItemTemplate, value: boolean | ((item: MenuItemTemplate, keyboardModifiers?: KeyboardModifiers) => boolean), keyboardModifiers?: KeyboardModifiers): boolean;
 export declare function evalToString(item: MenuItemTemplate, value: string | ((item: MenuItemTemplate, keyboardModifiers?: KeyboardModifiers) => string), options: {
@@ -138,7 +138,7 @@ declare global {
     }
 }
 export declare class MenuItemFromTemplate extends MenuItem {
-    _type: 'normal' | 'separator' | 'submenu' | 'checkbox' | 'radio';
+    _type: 'normal' | 'divider' | 'submenu' | 'checkbox' | 'radio';
     _label?: string;
     _disabled: boolean;
     _hidden: boolean;
@@ -153,7 +153,7 @@ export declare class MenuItemFromTemplate extends MenuItem {
     constructor(template: MenuItemTemplate, parentMenu: MenuInterface, options?: {
         keyboardModifiers?: KeyboardModifiers;
     });
-    get type(): 'normal' | 'separator' | 'submenu' | 'checkbox' | 'radio';
+    get type(): 'normal' | 'divider' | 'submenu' | 'checkbox' | 'radio';
     get label(): string;
     get hidden(): boolean;
     get disabled(): boolean;
@@ -167,8 +167,8 @@ export declare class MenuItemFromElement extends MenuItem {
     _sourceElement: UIElement;
     _sourceElementClone: UIElement;
     _cachedElement: HTMLElement;
-    constructor(element: UIMenuItemElement, parentMenu: MenuInterface);
-    get type(): 'normal' | 'separator' | 'submenu' | 'checkbox' | 'radio';
+    constructor(element: UIMenuItem, parentMenu: MenuInterface);
+    get type(): 'normal' | 'divider' | 'submenu' | 'checkbox' | 'radio';
     get label(): string;
     get hidden(): boolean;
     set hidden(value: boolean);
@@ -176,8 +176,8 @@ export declare class MenuItemFromElement extends MenuItem {
     set disabled(value: boolean);
     get checked(): boolean;
     set checked(value: boolean);
-    get separator(): boolean;
-    set separator(value: boolean);
+    get divider(): boolean;
+    set divider(value: boolean);
     get active(): boolean;
     set active(val: boolean);
     private render;
@@ -185,9 +185,9 @@ export declare class MenuItemFromElement extends MenuItem {
     dispatchSelect(kbd?: KeyboardModifiers): void;
 }
 export declare class Submenu extends Menu {
-    source: UISubmenuElement;
+    source: UISubmenu;
     constructor(options: {
-        host: UISubmenuElement;
+        host: UISubmenu;
         parentMenu: MenuInterface;
     });
     get element(): HTMLElement;

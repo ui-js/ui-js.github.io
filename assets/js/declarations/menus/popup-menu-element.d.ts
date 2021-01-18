@@ -1,7 +1,7 @@
 import { UIElement } from '../common/ui-element';
 import { KeyboardModifiers } from '../common/events';
 import { MenuItemTemplate } from './menu-core';
-export declare class UIPopupMenuElement extends UIElement {
+export declare class UIPopupMenu extends UIElement {
     private rootMenu;
     private templateMenuItems;
     position: 'leading' | 'trailing' | 'left' | 'end';
@@ -50,10 +50,10 @@ export declare class UIPopupMenuElement extends UIElement {
      */
     hide(): void;
 }
-export default UIPopupMenuElement;
+export default UIPopupMenu;
 declare global {
     /** @internal */
     export interface Window {
-        UIPopupMenuElement: typeof UIPopupMenuElement;
+        UIPopupMenu: typeof UIPopupMenu;
     }
 }

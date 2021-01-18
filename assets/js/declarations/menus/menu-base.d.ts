@@ -3,14 +3,14 @@ import { KeyboardModifiers } from '../common/events';
  * Base class to represent a menu item.
  * There are two subclasses:
  * - MenuItemFromTemplate for menu items created from a JSON template
- * - MenuItemFromElement for menu items created for a UIMenuItemElement
+ * - MenuItemFromElement for menu items created for a UIMenuItem
  */
 export declare abstract class MenuItem {
     parentMenu: MenuInterface;
     submenu?: MenuInterface;
     constructor(parentMenu: MenuInterface);
     handleEvent(event: Event): void;
-    abstract get type(): 'normal' | 'separator' | 'submenu' | 'checkbox' | 'radio';
+    abstract get type(): 'normal' | 'divider' | 'submenu' | 'checkbox' | 'radio';
     abstract get active(): boolean;
     abstract get hidden(): boolean;
     abstract get disabled(): boolean;

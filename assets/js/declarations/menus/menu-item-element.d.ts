@@ -6,16 +6,16 @@ import { MenuItem } from './menu-base';
  * Other elements such as the checkmark and the submenu indicator
  * are rendered by the menu container.
  */
-export declare class UIMenuItemElement extends UIElement {
+export declare class UIMenuItem extends UIElement {
     private _menuItem;
     set menuItem(value: MenuItem);
     get menuItem(): MenuItem;
     constructor();
 }
-export default UIMenuItemElement;
+export default UIMenuItem;
 declare global {
     /** @internal */
     export interface Window {
-        UIMenuItemElement: typeof UIMenuItemElement;
+        UIMenuItem: typeof UIMenuItem;
     }
 }

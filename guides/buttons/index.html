@@ -1,4 +1,4 @@
-<!doctype html><html class=no-js lang=en><meta charset=utf-8><title>ui-js</title><meta content=""name=description><link href=/feed.xml rel=alternate title="ui-js Feed"type=application/atom+xml><meta content="width=device-width,initial-scale=1"name=viewport><meta content=strict-origin name=referrer><script>document.documentElement.className = document.documentElement.className.replace(/\bno-js\b/g, '') + ' js ';</script><script crossorigin=anonymous src=https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.3/codemirror.min.js></script><script crossorigin=anonymous src=https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.3/mode/javascript/javascript.min.js></script><script crossorigin=anonymous src=https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.3/mode/xml/xml.min.js></script><script crossorigin=anonymous src=/assets/js/code-playground.js type=module></script><script crossorigin=anonymous src=/assets/js/ui.js type=module></script><link href=/assets/css/sdk-documentation-layout.css rel=stylesheet><link href=https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.3/codemirror.min.css rel=stylesheet><link href=/assets/js/ui.css rel=stylesheet><link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:100,100i,400,400i,700,700i,900,900i&display=block"rel=stylesheet crossorigin><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,700;1,400;1,700&family=IBM+Plex+Sans:ital,wght@0,400;0,700;1,400;1,700&display=block"rel=stylesheet crossorigin><script crossorigin=anonymous src=https://kit.fontawesome.com/523e3eb8bb.js></script><body class=layout--sdk-documentation-layout><nav class=skip-links><h2 class=screen-reader-text>Skip links</h2><ul><li><a href=#site-nav class=screen-reader-shortcut>Skip to primary navigation</a><li><a href=#main class=screen-reader-shortcut>Skip to content</a><li><a href=#footer class=screen-reader-shortcut>Skip to footer</a></ul></nav><!--[if lt IE 9]><div class="notice--danger align-center"style=margin:0>You are using an <strong>outdated</strong> browser. Please <a href=https://browsehappy.com/ >upgrade your browser</a> to improve your experience.</div><![endif]--><div class=masthead><div class=masthead__inner-wrap><div class=masthead__menu><nav class=greedy-nav id=site-nav><a href=/ class=site-logo><img alt=""src=""></a><a href=/ class=site-title>ui-<em>js</em></a><ul class=visible-links><li class=masthead__menu-item><a href=https://gitter.im/cortex-js title="Chat on Gitter"><svg class=icon1em><use role=none xlink:href=/assets/icons.svg#gitter></use></svg></a><li class=masthead__menu-item><a href=https://github.com/ui-js title="Get source code on GitHub"><svg class=icon1em><use role=none xlink:href=/assets/icons.svg#github></use></svg></a></ul><button class="hidden greedy-nav__toggle"type=button><span class=visually-hidden>Toggle menu</span><div class=navicon></div></button><ul class="hidden hidden-links"></ul></nav></div></div></div><div class=initial-content><div id=main role=main><div class="sidebar sticky"><nav class=nav__list><input id=ac-toc name=accordion-toc type=checkbox> <label for=ac-toc><svg class="fa-ellipsis-h svg-inline--fa"aria-hidden=true data-icon=ellipsis-h data-prefix=fal focusable=false role=img style=width:32px;height:32px viewBox="0 0 320 512"xmlns=http://www.w3.org/2000/svg><path d="M192 256c0 17.7-14.3 32-32 32s-32-14.3-32-32 14.3-32 32-32 32 14.3 32 32zm88-32c-17.7 0-32 14.3-32 32s14.3 32 32 32 32-14.3 32-32-14.3-32-32-32zm-240 0c-17.7 0-32 14.3-32 32s14.3 32 32 32 32-14.3 32-32-14.3-32-32-32z"fill=currentColor></path></svg></label><ul class=nav__items><li><span class=nav__sub-title>Introduction</span><ul><li><a href=/ >Welcome</a><li><a href=/conventions/ >Conventions</a></ul><li><span class=nav__sub-title>Components</span><ul><li><a href=/guides/button/ >Button</a><li><a href=/guides/buttons/ class=active>Buttons</a><li><a href=/guides/context-menu/ >Context Menu</a><li><a href=/guides/menus/ >Menus</a><li><a href=/guides/popup-menu/ >Popup Menu</a></ul><li><span class=nav__sub-title>Contributing</span><ul><li><a href=/docs/reporting-issues/ >Reporting Issues</a><li><a href=/funding/ >Funding</a><li><a href=/docs/code-of-conduct/ >Code of Conduct</a><li><a href=/docs/license/ >License</a></ul></ul></nav></div><article class=page itemscope itemtype=https://schema.org/CreativeWork><meta content=Buttons itemprop=headline><div class=page__inner-wrap><header><h1 class=page__title id=page-title itemprop=headline>Buttons</h1></header><section class=page__content itemprop=text><p>Use <code>&lt;ui-buttons></code> to group related buttons together.<h2>Size</h2><p>Use the <code>xs</code>, <code>sm</code>, <code>md</code>, <code>lg</code> or <code>xl</code> class with the <code>ui-buttons</code> class to indicate the size of the buttons in the button group.</p><code-playground layout="stack" class="m-lg w-full-lg" output-stylesheets="/assets/js/ui.css">
+<!doctype html><html class=no-js lang=en><meta charset=utf-8><title>ui-js</title><meta content=""name=description><link href=/feed.xml rel=alternate title="ui-js Feed"type=application/atom+xml><meta content="width=device-width,initial-scale=1"name=viewport><meta content=strict-origin name=referrer><script>document.documentElement.className = document.documentElement.className.replace(/\bno-js\b/g, '') + ' js ';</script><script crossorigin=anonymous src=https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.3/codemirror.min.js></script><script crossorigin=anonymous src=https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.3/mode/javascript/javascript.min.js></script><script crossorigin=anonymous src=https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.3/mode/xml/xml.min.js></script><script crossorigin=anonymous src=/assets/js/code-playground.js type=module></script><script crossorigin=anonymous src=/assets/js/ui.js type=module></script><link href=/assets/css/sdk-documentation-layout.css rel=stylesheet><link href=https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.3/codemirror.min.css rel=stylesheet><link href=/assets/js/ui.css rel=stylesheet><link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:100,100i,400,400i,700,700i,900,900i&display=block"rel=stylesheet crossorigin><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,700;1,400;1,700&family=IBM+Plex+Sans:ital,wght@0,400;0,700;1,400;1,700&display=block"rel=stylesheet crossorigin><script crossorigin=anonymous src=https://kit.fontawesome.com/523e3eb8bb.js></script><body class=layout--sdk-documentation-layout><nav class=skip-links><h2 class=screen-reader-text>Skip links</h2><ul><li><a href=#site-nav class=screen-reader-shortcut>Skip to primary navigation</a><li><a href=#main class=screen-reader-shortcut>Skip to content</a><li><a href=#footer class=screen-reader-shortcut>Skip to footer</a></ul></nav><!--[if lt IE 9]><div class="notice--danger align-center"style=margin:0>You are using an <strong>outdated</strong> browser. Please <a href=https://browsehappy.com/ >upgrade your browser</a> to improve your experience.</div><![endif]--><div class=masthead><div class=masthead__inner-wrap><div class=masthead__menu><nav class=greedy-nav id=site-nav><a href=/ class=site-logo><img alt=""src=""></a><a href=/ class=site-title>ui-<em>js</em></a><ul class=visible-links><li class=masthead__menu-item><a href=https://gitter.im/cortex-js title="Chat on Gitter"><svg class=icon1em><use role=none xlink:href=/assets/icons.svg#gitter></use></svg></a><li class=masthead__menu-item><a href=https://github.com/ui-js title="Get source code on GitHub"><svg class=icon1em><use role=none xlink:href=/assets/icons.svg#github></use></svg></a></ul><button class="hidden greedy-nav__toggle"type=button><span class=visually-hidden>Toggle menu</span><div class=navicon></div></button><ul class="hidden hidden-links"></ul></nav></div></div></div><div class=initial-content><div id=main role=main><div class="sidebar sticky"><nav class=nav__list><input id=ac-toc name=accordion-toc type=checkbox> <label for=ac-toc><svg class="fa-ellipsis-h svg-inline--fa"aria-hidden=true data-icon=ellipsis-h data-prefix=fal focusable=false role=img style=width:32px;height:32px viewBox="0 0 320 512"xmlns=http://www.w3.org/2000/svg><path d="M192 256c0 17.7-14.3 32-32 32s-32-14.3-32-32 14.3-32 32-32 32 14.3 32 32zm88-32c-17.7 0-32 14.3-32 32s14.3 32 32 32 32-14.3 32-32-14.3-32-32-32zm-240 0c-17.7 0-32 14.3-32 32s14.3 32 32 32 32-14.3 32-32-14.3-32-32-32z"fill=currentColor></path></svg></label><ul class=nav__items><li><span class=nav__sub-title>Introduction</span><ul><li><a href=/ >Welcome</a><li><a href=/conventions/ >Conventions</a></ul><li><span class=nav__sub-title>Components</span><ul><li><a href=/guides/button/ >Button</a><li><a href=/guides/buttons/ class=active>Buttons</a><li><a href=/guides/context-menu/ >Context Menu</a><li><a href=/guides/menus/ >Menus</a><li><a href=/guides/popup-menu/ >Popup Menu</a></ul><li><span class=nav__sub-title>Contributing</span><ul><li><a href=/docs/reporting-issues/ >Reporting Issues</a><li><a href=/funding/ >Funding</a><li><a href=/docs/code-of-conduct/ >Code of Conduct</a><li><a href=/docs/license/ >License</a></ul></ul></nav></div><article class=page itemscope itemtype=https://schema.org/CreativeWork><meta content="ui-js Buttons"itemprop=headline><div class=page__inner-wrap><header><h1 class=page__title id=page-title itemprop=headline>ui-js Buttons</h1></header><section class=page__content itemprop=text><p>To represent a group of related buttons, use the <code>&lt;ui-buttons></code> element.<table><thead><tr><th style=text-align:left>Attribute<th style=text-align:left>Description<tbody><tr><td style=text-align:left><code>pill</code><td style=text-align:left>Set the shape of all the buttons in the button group<tr><td style=text-align:left><code>radio</code><td style=text-align:left>Only one button in the group can be active at a time<tr><td style=text-align:left><code>checkbox</code><td style=text-align:left>One or more buttons in the group can be active at a time<tr><td style=text-align:left><code>vertical</code><td style=text-align:left>The buttons are displayed in a column</table><h2>Button group</h2><p>Buttons inside a <code>&lt;ui-buttons></code> element will be displayed next to each other without padding.</p><code-playground layout="stack" class="m-lg w-full-lg" output-stylesheets="/assets/js/ui.css">
 <style slot="style">
 .zebra-zone {
     display: flex;
@@ -18,10 +18,102 @@
 }
 </style>
 <div slot="html">
-&lt;div class=&quot;ui-buttons xs&quot;&gt;
-    &lt;button class=&quot;ui-button&quot;&gt;Bold&lt;/button&gt;
-    &lt;button class=&quot;ui-button&quot;&gt;Italic&lt;/button&gt;
-    &lt;button class=&quot;ui-button&quot;&gt;Underline&lt;/button&gt;
-&lt;/div&gt;
+&lt;ui-buttons&gt;
+    &lt;ui-button&gt;Back&lt;/ui-button&gt;
+    &lt;ui-button&gt;Forward&lt;/ui-button&gt;
+&lt;/ui-buttons&gt;
+</div>
+</code-playground><h2>Radio and Checkbox group</h2><p>A button group can have a state representing which buttons are “active” (selected). The behavior of the buttons is controlled by the <code>radio</code> or <code>checkbox</code> attribute.</p><code-playground layout="stack" class="m-lg w-full-lg" output-stylesheets="/assets/js/ui.css">
+<style slot="style">
+.zebra-zone {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 6em;
+    font-size: 1.5em;
+    font-weight: 700;
+    color: #999;
+    background: repeating-linear-gradient(
+        -45deg,
+        #ffffff,
+        #fff 40px,
+        #eeeeee 40px,
+        #eee 80px
+    );
+}
+</style>
+<div slot="html">
+&lt;ui-buttons checkbox&gt;
+    &lt;ui-button&gt;Bold&lt;/ui-button&gt;
+    &lt;ui-button&gt;Italic&lt;/ui-button&gt;
+    &lt;ui-button&gt;Underline&lt;/ui-button&gt;
+&lt;/ui-buttons&gt;
+<!-- -->
+&lt;ui-buttons radio&gt;
+    &lt;ui-button&gt;Left&lt;/ui-button&gt;
+    &lt;ui-button&gt;Center&lt;/ui-button&gt;
+    &lt;ui-button&gt;Right&lt;/ui-button&gt;
+&lt;/ui-buttons&gt;
+</div>
+</code-playground><h2>Split button</h2><p>When a button has a default action and also offers variants of that action, use a split button and popup-menu in a <code>&lt;ui-buttons></code> element.</p><code-playground layout="stack" class="m-lg w-full-lg" output-stylesheets="/assets/js/ui.css">
+<style slot="style">
+.zebra-zone {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 6em;
+    font-size: 1.5em;
+    font-weight: 700;
+    color: #999;
+    background: repeating-linear-gradient(
+        -45deg,
+        #ffffff,
+        #fff 40px,
+        #eeeeee 40px,
+        #eee 80px
+    );
+}
+</style>
+<div slot="html">
+&lt;ui-buttons&gt;
+    &lt;ui-button&gt;Save&lt;/ui-button&gt;
+    &lt;ui-button&gt;
+        &lt;ui-icon&gt;chevron down&lt;/ui-icon&gt;
+        &lt;ui-popup-menu&gt;
+            &lt;ui-menu-item&gt;Save as PDF&lt;/ui-menu-item&gt;
+            &lt;ui-menu-item&gt;Save as JPEG&lt;/ui-menu-item&gt;
+            &lt;ui-menu-item&gt;Save as PNG&lt;/ui-menu-item&gt;
+        &lt;/ui-popup-menu&gt;
+    &lt;/ui-button&gt;
+&lt;/ui-buttons&gt;
+</div>
+</code-playground><h2>Dividers</h2><p>To introduce a separation between two buttons in a group, use a <code>&lt;ui-divider></code> element.</p><code-playground layout="stack" class="m-lg w-full-lg" output-stylesheets="/assets/js/ui.css">
+<style slot="style">
+.zebra-zone {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 6em;
+    font-size: 1.5em;
+    font-weight: 700;
+    color: #999;
+    background: repeating-linear-gradient(
+        -45deg,
+        #ffffff,
+        #fff 40px,
+        #eeeeee 40px,
+        #eee 80px
+    );
+}
+</style>
+<div slot="html">
+&lt;ui-buttons&gt;
+    &lt;ui-button&gt;Insert&lt;/ui-button&gt;
+    &lt;ui-button&gt;Duplicate&lt;/ui-button&gt;
+    &lt;ui-button&gt;Remove&lt;/ui-button&gt;
+    &lt;ui-divider&gt;&lt;/ui-divider&gt;
+    &lt;ui-button&gt;Bring to Front&lt;/ui-button&gt;
+    &lt;ui-button&gt;Send to Back&lt;/ui-button&gt;
+&lt;/ui-buttons&gt;
 </div>
 </code-playground></section><footer class=page__meta></footer></div></article></div></div><div class=page__footer id=footer><footer><div class=page__footer-follow><ul class=social-icons><li><a href=https://github.com/ui-js rel="nofollow noopener noreferrer"><svg class=icon1em><use role=none xlink:href=/assets/icons.svg#github></use></svg>GitHub</a><li><a href=https://gitter.im/cortex-js rel="nofollow noopener noreferrer"><svg class=icon1em><use role=none xlink:href=/assets/icons.svg#gitter></use></svg>Gitter</a></ul></div><div class=page__footer-pages><ul><li><a href=/about rel="nofollow noopener noreferrer">About Us</a></ul></div></footer></div>

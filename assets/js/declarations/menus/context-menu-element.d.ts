@@ -26,7 +26,7 @@ import { MenuItemTemplate } from './menu-core';
  * The content of a menu (menu items and submenus) is represented by a 'model',
  * an instance of the Menu class.
  * The model is created from:
- * - argument to the UIContextMenuElement constructor
+ * - argument to the UIContextMenu constructor
  * - setting the `menuItems` property
  * - a `<script>` tag containing a JSON description of menu items
  * - a set of child `<ui-menu-item>` elements.
@@ -50,7 +50,7 @@ import { MenuItemTemplate } from './menu-core';
  * - a submenu indicator
  *
  */
-export declare class UIContextMenuElement extends UIElement {
+export declare class UIContextMenu extends UIElement {
     private rootMenu;
     private templateMenuItems;
     private longPressDetector;
@@ -99,10 +99,16 @@ export declare class UIContextMenuElement extends UIElement {
      */
     hide(): void;
 }
-export default UIContextMenuElement;
+export default UIContextMenu;
 declare global {
     /** @internal */
     export interface Window {
-        UIContextMenuElement: typeof UIContextMenuElement;
+        UIContextMenu: typeof UIContextMenu;
+    }
+    /** @internal */
+    namespace JSX {
+        interface IntrinsicElements {
+            'ui-context-menu': UIContextMenu;
+        }
     }
 }

@@ -7,13 +7,12 @@ import { UIElement } from '../common/ui-element';
  *
  * It can include a `<style>` tag.
  */
-export declare class UISubmenuElement extends UIElement {
+export declare class UISubmenu extends UIElement {
     constructor();
 }
-export default UISubmenuElement;
 declare global {
     /** @internal */
     export interface Window {
-        UISubmenuElement: typeof UISubmenuElement;
+        UISubmenu: typeof UISubmenu;
     }
 }
