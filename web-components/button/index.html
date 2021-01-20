@@ -1,0 +1,118 @@
+<!doctype html><html class=no-js lang=en><meta charset=utf-8><title>ui-js</title><meta content=""name=description><link href=/feed.xml rel=alternate title="ui-js Feed"type=application/atom+xml><meta content="width=device-width,initial-scale=1"name=viewport><meta content=strict-origin name=referrer><script>document.documentElement.className = document.documentElement.className.replace(/\bno-js\b/g, '') + ' js ';</script><script crossorigin=anonymous src=https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.59.1/codemirror.min.js></script><script crossorigin=anonymous src=https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.59.1/mode/javascript/javascript.min.js></script><script crossorigin=anonymous src=https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.59.1/mode/xml/xml.min.js></script><script crossorigin=anonymous src=/assets/js/code-playground.js type=module></script><script crossorigin=anonymous src=/assets/js/ui.js type=module></script><link href=/assets/css/sdk-documentation-layout.css rel=stylesheet><link href=https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.59.1/codemirror.min.css rel=stylesheet><link href=/assets/js/ui.css rel=stylesheet><link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:100,100i,400,400i,700,700i,900,900i&display=block"rel=stylesheet crossorigin><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,700;1,400;1,700&family=IBM+Plex+Sans:ital,wght@0,400;0,700;1,400;1,700&display=block"rel=stylesheet crossorigin><script crossorigin=anonymous src=https://kit.fontawesome.com/523e3eb8bb.js></script><body class=layout--sdk-documentation-layout><nav class=skip-links><h2 class=screen-reader-text>Skip links</h2><ul><li><a href=#site-nav class=screen-reader-shortcut>Skip to primary navigation</a><li><a href=#main class=screen-reader-shortcut>Skip to content</a><li><a href=#footer class=screen-reader-shortcut>Skip to footer</a></ul></nav><!--[if lt IE 9]><div class="notice--danger align-center"style=margin:0>You are using an <strong>outdated</strong> browser. Please <a href=https://browsehappy.com/ >upgrade your browser</a> to improve your experience.</div><![endif]--><div class=masthead><div class=masthead__inner-wrap><div class=masthead__menu><nav class=greedy-nav id=site-nav><a href=/ class=site-logo><img alt=""src=""></a><a href=/ class=site-title>ui-<em>js</em></a><ul class=visible-links><li class=masthead__menu-item><a href=/web-components title="Web Components Documentation">Web Components</a><li class=masthead__menu-item><a href=https://gitter.im/cortex-js title="Chat on Gitter"><svg class=icon1em><use role=none xlink:href=/assets/icons.svg#gitter></use></svg></a><li class=masthead__menu-item><a href=https://github.com/ui-js title="Get source code on GitHub"><svg class=icon1em><use role=none xlink:href=/assets/icons.svg#github></use></svg></a></ul><button class="hidden greedy-nav__toggle"type=button><span class=visually-hidden>Toggle menu</span><div class=navicon></div></button><ul class="hidden hidden-links"></ul></nav></div></div></div><div class=initial-content><div id=main role=main><div class="sidebar sticky"><nav class=nav__list><input id=ac-toc name=accordion-toc type=checkbox> <label for=ac-toc><svg class="fa-ellipsis-h svg-inline--fa"aria-hidden=true data-icon=ellipsis-h data-prefix=fal focusable=false role=img style=width:32px;height:32px viewBox="0 0 320 512"xmlns=http://www.w3.org/2000/svg><path d="M192 256c0 17.7-14.3 32-32 32s-32-14.3-32-32 14.3-32 32-32 32 14.3 32 32zm88-32c-17.7 0-32 14.3-32 32s14.3 32 32 32 32-14.3 32-32-14.3-32-32-32zm-240 0c-17.7 0-32 14.3-32 32s14.3 32 32 32 32-14.3 32-32-14.3-32-32-32z"fill=currentColor></path></svg></label><ul class=nav__items><li><span class=nav__sub-title>Introduction</span><ul><li><a href=/web-components>Welcome</a><li><a href=/web-components/conventions/ >Conventions</a></ul><li><span class=nav__sub-title>Components</span><ul><li><a href=/web-components/button/ class=active>Button</a><li><a href=/web-components/buttons/ >Buttons</a><li><a href=/web-components/context-menu/ >Context Menu</a><li><a href=/web-components/menus/ >Menus</a><li><a href=/web-components/popup-menu/ >Popup Menu</a></ul><li><span class=nav__sub-title>Contributing</span><ul><li><a href=/docs/reporting-issues/ >Reporting Issues</a><li><a href=/funding/ >Funding</a><li><a href=/docs/code-of-conduct/ >Code of Conduct</a><li><a href=/docs/license/ >License</a></ul></ul></nav></div><article class=page itemscope itemtype=https://schema.org/CreativeWork><meta content=Button itemprop=headline><div class=page__inner-wrap><header><h1 class=page__title id=page-title itemprop=headline>Button</h1></header><section class=page__content itemprop=text><p>A button is used to trigger immediate actions.<p><strong>Use title-case capitalization for button labels</strong>.<p><strong>Use verbs in button labels</strong>.<p><strong>Add an ellipsis to the button label when completing the task requires additional information</strong><h2>Simple Button</h2><code-playground layout="stack" class="m-lg w-full-lg" output-stylesheets="/assets/js/ui.css">
+<style slot="style">
+.zebra-zone {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 6em;
+    font-size: 1.5em;
+    font-weight: 700;
+    color: #999;
+    background: repeating-linear-gradient(
+        -45deg,
+        #ffffff,
+        #fff 40px,
+        #eeeeee 40px,
+        #eee 80px
+    );
+}
+</style>
+<div slot="html">
+&lt;button class=&quot;ui-button&quot;&gt;Push Me&lt;/button&gt;
+</div>
+</code-playground><h2>Size</h2><p>Do not mix the size of buttons within a group.</p><code-playground layout="stack" class="m-lg w-full-lg" output-stylesheets="/assets/js/ui.css">
+<style slot="style">
+.zebra-zone {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 6em;
+    font-size: 1.5em;
+    font-weight: 700;
+    color: #999;
+    background: repeating-linear-gradient(
+        -45deg,
+        #ffffff,
+        #fff 40px,
+        #eeeeee 40px,
+        #eee 80px
+    );
+}
+</style>
+<div slot="html">
+&lt;div&gt;
+    &lt;button class=&quot;ui-button xs&quot;&gt;Extra-Small&lt;/button&gt;
+    &lt;button class=&quot;ui-button sm&quot;&gt;Small&lt;/button&gt;
+    &lt;button class=&quot;ui-button md&quot;&gt;Medium&lt;/button&gt;
+    &lt;button class=&quot;ui-button lg&quot;&gt;Large&lt;/button&gt;
+    &lt;button class=&quot;ui-button xl&quot;&gt;Extra-Large&lt;/button&gt;
+&lt;/div&gt;
+</div>
+</code-playground><h2>Variants</h2><p><strong>Use the <code>primary</code> variant for the most important or most likely action</strong>. There should be one primary button per page.<p><strong>Use the <code>secondary</code> variant to indicate the most important or most likely action, but with a decreases emphasis</strong>. Don’t use a secondary button if there’s already a primary button on the page.<p><strong>Use the <code>critical</code> variant for destructive actions</strong>. Keep these buttons separated from other buttons.<p><strong>Use the <code>lightweight</code> variants to reduce the visual weight of the buttons</strong>.</p><code-playground layout="stack" class="m-lg w-full-lg" output-stylesheets="/assets/js/ui.css">
+<style slot="style">
+.zebra-zone {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 6em;
+    font-size: 1.5em;
+    font-weight: 700;
+    color: #999;
+    background: repeating-linear-gradient(
+        -45deg,
+        #ffffff,
+        #fff 40px,
+        #eeeeee 40px,
+        #eee 80px
+    );
+}
+</style>
+<div slot="html">
+&lt;h3&gt;Regular&lt;/h3&gt;
+&lt;div class=&quot;ui-buttons&quot;&gt;
+    &lt;button class=&quot;ui-button&quot;&gt;Default&lt;/button&gt;
+    &lt;button class=&quot;ui-button primary&quot;&gt;Primary&lt;/button&gt;
+    &lt;button class=&quot;ui-button secondary&quot;&gt;Secondary&lt;/button&gt;
+    &lt;button class=&quot;ui-button critical&quot;&gt;Critical&lt;/button&gt;
+&lt;/div&gt;
+<!-- -->
+&lt;h3&gt;Lightweight&lt;/h3&gt;
+&lt;div&gt;
+    &lt;button class=&quot;ui-button lightweight&quot;&gt;Lightweight&lt;/button&gt;
+    &lt;button class=&quot;ui-button lightweight primary&quot;&gt;Primary&lt;/button&gt;
+    &lt;button class=&quot;ui-button lightweight secondary&quot;&gt;Secondary&lt;/button&gt;
+    &lt;button class=&quot;ui-button lightweight critical&quot;&gt;Critical&lt;/button&gt;
+&lt;/div&gt;
+</div>
+</code-playground><h2>States</h2><code-playground layout="stack" class="m-lg w-full-lg" output-stylesheets="/assets/js/ui.css">
+<style slot="style">
+.zebra-zone {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 6em;
+    font-size: 1.5em;
+    font-weight: 700;
+    color: #999;
+    background: repeating-linear-gradient(
+        -45deg,
+        #ffffff,
+        #fff 40px,
+        #eeeeee 40px,
+        #eee 80px
+    );
+}
+</style>
+<div slot="html">
+&lt;div&gt;
+    &lt;button class=&quot;ui-button&quot;&gt;Enabled&lt;/button&gt;
+    &lt;button class=&quot;ui-button&quot; disabled&gt;Disabled&lt;/button&gt;
+&lt;/div&gt;
+</div>
+<div slot="html">
+&lt;div&gt;
+    &lt;button class=&quot;ui-button&quot;&gt;Regular&lt;/button&gt;
+    &lt;button class=&quot;ui-button active&quot;&gt;Active&lt;/button&gt;
+&lt;/div&gt;
+</div>
+</code-playground></section><footer class=page__meta></footer></div></article></div></div><div class=page__footer id=footer><footer><div class=page__footer-follow><ul class=social-icons><li><a href=https://github.com/ui-js rel="nofollow noopener noreferrer"><svg class=icon1em><use role=none xlink:href=/assets/icons.svg#github></use></svg>GitHub</a><li><a href=https://gitter.im/cortex-js rel="nofollow noopener noreferrer"><svg class=icon1em><use role=none xlink:href=/assets/icons.svg#gitter></use></svg>Gitter</a></ul></div><div class=page__footer-pages><ul><li><a href=/about rel="nofollow noopener noreferrer">About Us</a></ul></div></footer></div>
