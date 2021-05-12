@@ -2,13 +2,13 @@ import { UIElement } from '../common/ui-element';
 import { KeyboardModifiers } from '../common/events';
 import { MenuItemTemplate } from './menu-core';
 export declare class UIPopupMenu extends UIElement {
-    private rootMenu;
-    private templateMenuItems;
     position: 'leading' | 'trailing' | 'left' | 'end';
-    private _savedTransform;
+    private rootMenu?;
+    private templateMenuItems;
+    private _savedTransform?;
     constructor(menuItems?: MenuItemTemplate[]);
-    set menuItems(menuItems: MenuItemTemplate[]);
     get menuItems(): MenuItemTemplate[];
+    set menuItems(menuItems: MenuItemTemplate[]);
     /**
      * @internal
      */

@@ -1,29 +1,391 @@
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
   typeof define === 'function' && define.amd ? define(['exports'], factory) :
-  (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.uijs = {}));
+  (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.ui = global.ui || {}));
 }(this, (function (exports) { 'use strict';
+
+  const gDirtyList = new Set();
+  let gTimer = 0;
+  function dirty(updatable) {
+      gDirtyList.add(updatable);
+      // If there's already a pending timer, bail
+      if (gTimer !== 0)
+          return;
+      // Request a timer
+      gTimer = requestAnimationFrame(() => {
+          gTimer = 0;
+          const xs = [...gDirtyList.values()];
+          gDirtyList.clear();
+          for (const x of xs)
+              x.update();
+      });
+  }
+
+  /**
+   * - When the 'source of truth' is an attribute
+   * - Adds property getter/setter reflecting the value of the attribute
+   * - Use when the attribute is readonly (used for the construction of the element)
+   * or rarely changed
+   */
+  // export type AttributeDefinition = {
+  //   // eslint-disable-next-line @typescript-eslint/ban-types
+  //   type: String | Boolean | Number | Function | string[];
+  //   default: unknown;
+  // };
+  /**
+   * @internal
+   */
+  class UIElement extends HTMLElement {
+      constructor(options) {
+          super();
+          const shadowRoot = this.attachShadow({ mode: 'open' });
+          if ((options === null || options === void 0 ? void 0 : options.template) instanceof HTMLTemplateElement) {
+              shadowRoot.append(options.template.content.cloneNode(true));
+          }
+          else if (typeof (options === null || options === void 0 ? void 0 : options.template) === 'string') {
+              shadowRoot.innerHTML = options.template;
+          }
+          if ((options === null || options === void 0 ? void 0 : options.style) instanceof HTMLTemplateElement) {
+              shadowRoot.append(options.style.content.cloneNode(true));
+          }
+          else if (typeof (options === null || options === void 0 ? void 0 : options.style) === 'string') {
+              const style = document.createElement('style');
+              style.textContent = options.style;
+              shadowRoot.append(style);
+          }
+      }
+      static async register(options) {
+          var _a, _b;
+          UIElement.registry[options.tag] = options.constructor;
+          if (!((_a = window.customElements) === null || _a === void 0 ? void 0 : _a.get(options.tag))) {
+              window[options.className] =
+                  options.constructor;
+              (_b = window.customElements) === null || _b === void 0 ? void 0 : _b.define(options.tag, options.constructor);
+          }
+          if (window.customElements) {
+              return window.customElements.whenDefined(options.tag);
+          }
+          return Promise.reject(new Error('web components not supported'));
+      }
+      static getAttributeNameForProperty(p) {
+          if (!this.properties[p])
+              return null;
+          if (typeof this.properties[p].attribute === 'boolean') {
+              if (this.properties[p].attribute) {
+                  return toKebabCase(p);
+              }
+              return null;
+          }
+          else if (typeof this.properties[p].attribute === 'string') {
+              return this.properties[p].attribute;
+          }
+          return null;
+      }
+      static get observedAttributes() {
+          const attributes = [];
+          for (const prop of Object.keys(this.properties)) {
+              const attr = UIElement.getAttributeNameForProperty(prop);
+              if (attr)
+                  attributes.push(attr);
+          }
+          // @todo: add observed attributes from parent class, if any
+          return attributes;
+      }
+      set dirty(value) {
+          if (value)
+              dirty(this);
+      }
+      /**
+       * Declare that an attribute should be reflected as a property
+       */
+      reflectStringAttribute(attrName, propName = attrName) {
+          // Attributes should be all lower case, kebab-case.
+          console.assert(attrName.toLowerCase() === attrName);
+          Object.defineProperty(this, propName, {
+              enumerable: true,
+              get() {
+                  return this.getAttribute(attrName);
+              },
+              set(value) {
+                  this.setAttribute(attrName, value);
+              },
+          });
+      }
+      /**
+       * Declare that an attribute should be reflected as a property
+       */
+      reflectBooleanAttribute(attrName, propName = attrName) {
+          // Attributes should be all lower case, kebab-case.
+          console.assert(attrName.toLowerCase() === attrName);
+          Object.defineProperty(this, propName, {
+              enumerable: true,
+              get() {
+                  return this.hasAttribute(attrName);
+              },
+              set(value) {
+                  if (value) {
+                      this.setAttribute(attrName, '');
+                  }
+                  else {
+                      this.removeAttribute(attrName);
+                  }
+              },
+          });
+      }
+      /**
+       * Declare that an attribute should be reflected as a property
+       */
+      reflectEnumAttribute(attrName, attrValues, propName = attrName) {
+          // Attributes should be all lower case, kebab-case.
+          console.assert(attrName.toLowerCase() === attrName);
+          Object.defineProperty(this, propName, {
+              enumerable: true,
+              get() {
+                  let value;
+                  for (const x of attrValues) {
+                      if (this.hasAttribute(x)) {
+                          console.assert(value === undefined, `inconsistent ${attrName} attributes on ${this}`);
+                          value = x;
+                      }
+                  }
+                  if (value !== undefined)
+                      return value;
+                  return this.getAttribute(attrName);
+              },
+              set(value) {
+                  this.setAttribute(attrName, value);
+                  this.setAttribute(value, '');
+                  for (const x of attrValues) {
+                      if (x !== value) {
+                          this.removeAttribute(x);
+                      }
+                  }
+              },
+          });
+      }
+      reflectBooleanAttributes(attrNames) {
+          for (const x of attrNames) {
+              if (typeof x === 'string') {
+                  this.reflectBooleanAttribute(x);
+              }
+              else {
+                  this.reflectBooleanAttribute(x[0], x[1]);
+              }
+          }
+      }
+      reflectStringAttributes(attrNames) {
+          for (const x of attrNames) {
+              if (typeof x === 'string') {
+                  this.reflectStringAttribute(x);
+              }
+              else {
+                  this.reflectStringAttribute(x[0], x[1]);
+              }
+          }
+      }
+      get computedDir() {
+          return getComputedDir(this);
+      }
+      /**
+       * @internal
+       */
+      connectedCallback() {
+          // this.update();
+      }
+      /**
+       * @internal
+       */
+      disconnectedCallback() {
+          return;
+      }
+      /**
+       * @internal
+       */
+      get json() {
+          var _a;
+          if (this._json !== undefined)
+              return this._json;
+          this._json = null;
+          const slot = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector('slot');
+          if (!slot)
+              return null;
+          const json = slot
+              .assignedElements()
+              .filter((x) => x.tagName === 'SCRIPT' &&
+              x.type === 'application/json')
+              .map((x) => x.textContent)
+              .join('');
+          if (!json)
+              return null;
+          try {
+              this._json = JSON.parse(json);
+          }
+          catch (error) {
+              // @todo: do this if __DEV__ only
+              // There was an error parsing the JSON.
+              // Display a helpful message.
+              const message = error.toString();
+              const m = message.match(/position (\d+)/);
+              if (m) {
+                  const index = Number.parseInt(m[1]);
+                  const extract = json.substring(Math.max(index - 40, 0), index);
+                  throw new Error(`${message}\n${extract.trim()}`);
+              }
+              else {
+                  throw error;
+              }
+          }
+          return this._json;
+      }
+      /**
+       * @internal
+       */
+      get importedStyle() {
+          var _a;
+          if (this._style !== undefined)
+              return this._style;
+          let stylesheet = '';
+          const slot = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector('slot');
+          if (slot) {
+              stylesheet = slot
+                  .assignedElements()
+                  .filter((x) => x.tagName === 'STYLE')
+                  .map((x) => x.textContent)
+                  .join('')
+                  .trim();
+          }
+          if (stylesheet.length === 0) {
+              this._style = null;
+          }
+          else {
+              this._style = document.createElement('style');
+              this._style.textContent = stylesheet;
+          }
+          return this._style;
+      }
+      /** If there is an embedded <style> tag in the slot
+       *  "import" it in the shadow dom
+       */
+      importStyle() {
+          var _a;
+          if (this.importedStyle) {
+              (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.append(this.importedStyle.cloneNode(true));
+          }
+      }
+      update() {
+          var _a, _b;
+          if (!this.isConnected)
+              return;
+          // Iterate over all the nodes and remove them
+          // (ensures that eventHandlers are removed, unlike innerHTML = '')
+          while ((_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.firstChild) {
+              this.shadowRoot.firstChild.remove();
+          }
+          // Add new nodes
+          const child = this.render();
+          if (child)
+              (_b = this.shadowRoot) === null || _b === void 0 ? void 0 : _b.append(child);
+          this.importStyle();
+      }
+      /**
+       * Return a `HTMLElement` that will get attached to the root of
+       * this element.
+       * Event handlers should get added as well.
+       */
+      render() {
+          return null;
+      }
+  }
+  // Registry of UIElement classes to support `await ready()` in 'ui.ts'
+  UIElement.registry = {};
+  // The properties of this element and how they map to attributes
+  UIElement.properties = {};
+  /**
+   * An element can have multiple 'parts', which function as a kind of
+   * parallel classList.
+   *
+   * Add a part name to the part list of this element.
+   */
+  function addPart(element, part) {
+      var _a;
+      if (!element)
+          return;
+      const current = (_a = element.getAttribute('part')) !== null && _a !== void 0 ? _a : '';
+      if (!current.includes(part)) {
+          element.setAttribute('part', `${current} ${part}`);
+      }
+  }
+  /**
+   * Remove a part name from the part list of this element.
+   */
+  function removePart(element, part) {
+      var _a;
+      if (!element)
+          return;
+      const current = (_a = element.getAttribute('part')) !== null && _a !== void 0 ? _a : '';
+      if (current.includes(part)) {
+          element.setAttribute('part', current.replace(new RegExp('\\bs*' + part + 's*\\b', 'g'), ''));
+      }
+  }
+  function getComputedDir(element) {
+      if (element.dir && element.dir !== 'auto') {
+          return element.dir;
+      }
+      if (element.parentElement)
+          return getComputedDir(element.parentElement);
+      return 'ltr';
+  }
+  function getOppositeEdge(bounds, position, direction) {
+      if (position === 'left' ||
+          (position === 'leading' && direction === 'ltr') ||
+          (position === 'trailing' && direction === 'rtl')) {
+          return bounds.right;
+      }
+      return bounds.left;
+  }
+  function getEdge(bounds, position, direction) {
+      if (position === 'left' ||
+          (position === 'leading' && direction === 'ltr') ||
+          (position === 'trailing' && direction === 'rtl')) {
+          return bounds.left;
+      }
+      return bounds.right;
+  }
+  function toKebabCase(s) {
+      return s
+          .match(/[A-Z]{2,}(?=[A-Z][a-z]+[0-9]*|\b)|[A-Z]?[a-z]+[0-9]*|[A-Z]|[0-9]+/g)
+          .map((x) => x.toLowerCase())
+          .join('-');
+  }
 
   // We use a class to encapsulate the state that needs to be tracked and,
   // more importantly, to avoid memory leaks by using the `handleEvent()` hook
   // to ensure proper disposal of event handlers
   class LongPressDetector {
       constructor(triggerEvent, onLongPress) {
+          this.timer = 0;
           this.onLongPress = onLongPress;
-          this.startPoint = eventLocation(triggerEvent);
-          this.lastPoint = this.startPoint;
+          const location = eventLocation(triggerEvent);
+          if (!location)
+              return;
+          this.startPoint = location;
+          this.lastPoint = location;
           this.timer = setTimeout(() => {
               this.dispose();
               if (distance(this.lastPoint, this.startPoint) < 10) {
                   this.onLongPress();
               }
           }, LongPressDetector.DELAY);
-          ['pointermove', 'pointerup', 'pointercancel'].forEach((x) => window.addEventListener(x, this, { passive: true }));
+          for (const evt of ['pointermove', 'pointerup', 'pointercancel']) {
+              window.addEventListener(evt, this, { passive: true });
+          }
       }
       dispose() {
           clearTimeout(this.timer);
-          this.timer = undefined;
-          ['pointermove', 'pointerup', 'pointercancel'].forEach((x) => window.removeEventListener(x, this));
+          this.timer = 0;
+          for (const evt of ['pointermove', 'pointerup', 'pointercancel']) {
+              window.removeEventListener(evt, this);
+          }
       }
       handleEvent(event) {
           if (event.type === 'pointerup') {
@@ -31,8 +393,11 @@
               event.stopPropagation();
           }
           else if (event.type === 'pointermove') {
-              this.lastPoint = eventLocation(event);
-              event.stopPropagation();
+              const location = eventLocation(event);
+              if (location) {
+                  this.lastPoint = location;
+                  event.stopPropagation();
+              }
           }
           else if (event.type === 'pointercancel') {
               this.dispose();
@@ -40,7 +405,7 @@
           }
       }
   }
-  LongPressDetector.DELAY = 300; // in ms
+  LongPressDetector.DELAY = 300; // In ms
   function distance(p1, p2) {
       const dx = p2[0] - p1[0];
       const dy = p2[1] - p1[1];
@@ -50,8 +415,8 @@
       if (evt instanceof MouseEvent) {
           return [evt.clientX, evt.clientY];
       }
-      else if (evt instanceof TouchEvent) {
-          const result = Array.from(evt.touches).reduce((acc, x) => [acc[0] + x.clientX, acc[1] + x.clientY], [0, 0]);
+      if (evt instanceof TouchEvent) {
+          const result = [...evt.touches].reduce((acc, x) => [acc[0] + x.clientX, acc[1] + x.clientY], [0, 0]);
           const l = evt.touches.length;
           return [result[0] / l, result[1] / l];
       }
@@ -81,12 +446,14 @@
   function equalKeyboardModifiers(a, b) {
       if ((!a && b) || (a && !b))
           return false;
+      if (!a && !b)
+          return true;
       return (a.alt === b.alt &&
           a.control === b.control &&
           a.shift === b.shift &&
           a.meta === b.meta);
   }
-  const PRINTABLE_KEYCODE = [
+  const PRINTABLE_KEYCODE = new Set([
       'Backquote',
       'Digit0',
       'Digit1',
@@ -159,7 +526,7 @@
       'NumpadParenRight',
       'NumpadStar',
       'NumpadSubstract',
-  ];
+  ]);
   function mightProducePrintableCharacter(evt) {
       if (evt.ctrlKey || evt.metaKey) {
           // ignore ctrl/cmd-combination but not shift/alt-combinations
@@ -171,242 +538,7 @@
       // When issued via a composition, the `code` field is empty
       if (evt.code === '')
           return true;
-      return PRINTABLE_KEYCODE.indexOf(evt.code) >= 0;
-  }
-
-  /**
-   * @internal
-   */
-  class UIElement extends HTMLElement {
-      constructor(options) {
-          super();
-          this.attachShadow({ mode: 'open' });
-          if ((options === null || options === void 0 ? void 0 : options.template) instanceof HTMLTemplateElement) {
-              this.shadowRoot.appendChild(options.template.content.cloneNode(true));
-          }
-          else if (typeof (options === null || options === void 0 ? void 0 : options.template) === 'string') {
-              this.shadowRoot.innerHTML = options.template;
-          }
-          if ((options === null || options === void 0 ? void 0 : options.style) instanceof HTMLTemplateElement) {
-              this.shadowRoot.appendChild(options.style.content.cloneNode(true));
-          }
-          else if (typeof (options === null || options === void 0 ? void 0 : options.style) === 'string') {
-              const style = document.createElement('style');
-              style.textContent = options.style;
-              this.shadowRoot.append(style);
-          }
-      }
-      /**
-       * Declare that an attribute should be reflected as a property
-       */
-      reflectStringAttribute(attrName, propName = attrName) {
-          // Attributes should be all lower case, kebab-case.
-          console.assert(attrName.toLowerCase() === attrName);
-          Object.defineProperty(this, propName, {
-              enumerable: true,
-              get() {
-                  return this.getAttribute(attrName);
-              },
-              set(value) {
-                  this.setAttribute(attrName, value);
-              },
-          });
-      }
-      /**
-       * Declare that an attribute should be reflected as a property
-       */
-      reflectBooleanAttribute(attrName, propName = attrName) {
-          // Attributes should be all lower case, kebab-case.
-          console.assert(attrName.toLowerCase() === attrName);
-          Object.defineProperty(this, propName, {
-              enumerable: true,
-              get() {
-                  return this.hasAttribute(attrName);
-              },
-              set(value) {
-                  if (value) {
-                      this.setAttribute(attrName, '');
-                  }
-                  else {
-                      this.removeAttribute(attrName);
-                  }
-              },
-          });
-      }
-      /**
-       * Declare that an attribute should be reflected as a property
-       */
-      reflectEnumAttribute(attrName, attrValues, propName = attrName) {
-          // Attributes should be all lower case, kebab-case.
-          console.assert(attrName.toLowerCase() === attrName);
-          Object.defineProperty(this, propName, {
-              enumerable: true,
-              get() {
-                  let value;
-                  attrValues.forEach((x) => {
-                      if (this.hasAttribute(x)) {
-                          console.assert(typeof value === 'undefined', `inconsistent ${attrName} attributes on ${this}`);
-                          value = x;
-                      }
-                  });
-                  if (typeof value === 'string')
-                      return value;
-                  return this.getAttribute(attrName);
-              },
-              set(value) {
-                  this.setAttribute(attrName, value);
-                  this.setAttribute(value, '');
-                  attrValues.forEach((x) => {
-                      if (x !== value) {
-                          this.removeAttribute(x);
-                      }
-                  });
-              },
-          });
-      }
-      reflectBooleanAttributes(attrNames) {
-          attrNames.forEach((x) => {
-              if (typeof x === 'string') {
-                  this.reflectBooleanAttribute(x);
-              }
-              else {
-                  this.reflectBooleanAttribute(x[0], x[1]);
-              }
-          });
-      }
-      reflectStringAttributes(attrNames) {
-          attrNames.forEach((x) => {
-              if (typeof x === 'string') {
-                  this.reflectStringAttribute(x);
-              }
-              else {
-                  this.reflectStringAttribute(x[0], x[1]);
-              }
-          });
-      }
-      get computedDir() {
-          return getComputedDir(this);
-      }
-      /**
-       * @internal
-       */
-      connectedCallback() {
-          return;
-      }
-      /**
-       * @internal
-       */
-      disconnectedCallback() {
-          return;
-      }
-      /**
-       * @internal
-       */
-      get json() {
-          if (typeof this._json === 'undefined') {
-              this._json = null;
-              const json = this.shadowRoot
-                  .querySelector('slot')
-                  .assignedElements()
-                  .filter((x) => x.tagName === 'SCRIPT' && x['type'] === 'application/json')
-                  .map((x) => x.textContent)
-                  .join('');
-              if (json) {
-                  try {
-                      this._json = JSON.parse(json);
-                  }
-                  catch (e) {
-                      // There was an error parsing the JSON.
-                      // Display a helpful message.
-                      const msg = e.toString();
-                      const m = msg.match(/position ([0-9]+)/);
-                      if (m) {
-                          const index = parseInt(m[1]);
-                          const extract = json.substring(Math.max(index - 40, 0), index);
-                          throw new Error(msg + '\n' + extract.trim());
-                      }
-                      else {
-                          throw e;
-                      }
-                  }
-              }
-          }
-          return this._json;
-      }
-      /**
-       * @internal
-       */
-      get importedStyle() {
-          if (typeof this._style === 'undefined') {
-              this._style = this.shadowRoot
-                  .querySelector('slot')
-                  .assignedElements()
-                  .filter((x) => x.tagName === 'STYLE')
-                  .map((x) => x.textContent)
-                  .join('');
-          }
-          return this._style;
-      }
-      /** If there is an embedded <style> tag in the slot
-       *  "import" it in the shadow dom
-       */
-      importStyle() {
-          if (this.importedStyle) {
-              const style = document.createElement('style');
-              style.textContent = this.importedStyle;
-              this.shadowRoot.append(style);
-          }
-      }
-  }
-  /**
-   * An element can have multiple 'parts', which function as a kind of
-   * parallel classList.
-   *
-   * Add a part name to the part list of this element.
-   */
-  function addPart(el, part) {
-      var _a;
-      if (!el)
-          return;
-      const current = (_a = el.getAttribute('part')) !== null && _a !== void 0 ? _a : '';
-      if (!current.includes(part)) {
-          el.setAttribute('part', `${current} ${part}`);
-      }
-  }
-  /**
-   * Remove a part name from the part list of this element.
-   */
-  function removePart(el, part) {
-      var _a;
-      if (!el)
-          return;
-      const current = (_a = el.getAttribute('part')) !== null && _a !== void 0 ? _a : '';
-      if (current.includes(part)) {
-          el.setAttribute('part', current.replace(new RegExp('\\bs*' + part + 's*\\b', 'g'), ''));
-      }
-  }
-  function getComputedDir(el) {
-      if (el.dir && el.dir !== 'auto')
-          return el.dir;
-      if (el.parentElement)
-          return getComputedDir(el.parentElement);
-      return 'ltr';
-  }
-  function getOppositeEdge(bounds, position, direction) {
-      if (position === 'left' ||
-          (position === 'leading' && direction === 'ltr') ||
-          (position === 'trailing' && direction === 'rtl')) {
-          return bounds.right;
-      }
-      return bounds.left;
-  }
-  function getEdge(bounds, position, direction) {
-      if (position === 'left' ||
-          (position === 'leading' && direction === 'ltr') ||
-          (position === 'trailing' && direction === 'rtl')) {
-          return bounds.left;
-      }
-      return bounds.right;
+      return PRINTABLE_KEYCODE.has(evt.code);
   }
 
   const MENU_TEMPLATE = document.createElement('template');
@@ -595,25 +727,25 @@ ul.menu-container > li[aria-haspopup=true].active::after {
       get element() {
           if (this._element)
               return this._element;
-          const el = document.createElement('div');
-          el.setAttribute('role', 'presentation');
-          el.style.position = 'fixed';
-          el.style['contain'] = 'content';
-          el.style.top = '0';
-          el.style.left = '0';
-          el.style.right = '0';
-          el.style.bottom = '0';
-          el.style.zIndex = '9999';
-          el.style.outline = 'none';
+          const element = document.createElement('div');
+          element.setAttribute('role', 'presentation');
+          element.style.position = 'fixed';
+          element.style['contain'] = 'content';
+          element.style.top = '0';
+          element.style.left = '0';
+          element.style.right = '0';
+          element.style.bottom = '0';
+          element.style.zIndex = '9999';
+          element.style.outline = 'none';
           if (this.translucent) {
-              el.style.background = 'rgba(255, 255, 255, .2)';
-              el.style['backdropFilter'] = 'contrast(40%)';
+              element.style.background = 'rgba(255, 255, 255, .2)';
+              element.style['backdropFilter'] = 'contrast(40%)';
           }
           else {
-              el.style.background = 'transparent';
+              element.style.background = 'transparent';
           }
-          this._element = el;
-          return el;
+          this._element = element;
+          return element;
       }
       open(options) {
           var _a;
@@ -622,9 +754,9 @@ ul.menu-container > li[aria-haspopup=true].active::after {
           this.state = 'opening';
           // Remember the previously focused element. We'll restore it when we close.
           this.savedActiveElement = deepActiveElement();
-          const el = this.element;
-          ((_a = options === null || options === void 0 ? void 0 : options.root) !== null && _a !== void 0 ? _a : document.body).appendChild(el);
-          el.addEventListener('click', this);
+          const { element } = this;
+          ((_a = options === null || options === void 0 ? void 0 : options.root) !== null && _a !== void 0 ? _a : document.body).appendChild(element);
+          element.addEventListener('click', this);
           document.addEventListener('touchmove', this, false);
           document.addEventListener('scroll', this, false);
           // Prevent (some) scrolling
@@ -633,32 +765,32 @@ ul.menu-container > li[aria-haspopup=true].active::after {
           this.savedMarginRight = document.body.style.marginRight;
           this.savedOverflow = document.body.style.overflow;
           document.body.style.overflow = 'hidden';
-          const marginRight = parseFloat(getComputedStyle(document.body).marginRight);
+          const marginRight = Number.parseFloat(getComputedStyle(document.body).marginRight);
           document.body.style.marginRight = `${marginRight + scrollbarWidth}px`;
           if (options === null || options === void 0 ? void 0 : options.child) {
-              el.appendChild(options.child);
+              element.append(options.child);
           }
           this.state = 'open';
       }
       close() {
-          var _a, _b;
+          var _a, _b, _c, _d;
           if (this.state !== 'open')
               return;
           this.state = 'closing';
           if (typeof this.onClose === 'function')
               this.onClose();
-          const el = this.element;
-          el.removeEventListener('click', this);
+          const { element } = this;
+          element.removeEventListener('click', this);
           document.removeEventListener('touchmove', this, false);
           document.removeEventListener('scroll', this, false);
-          el.parentNode.removeChild(el);
+          element.remove();
           // Restore body state
-          document.body.style.overflow = this.savedOverflow;
-          document.body.style.marginRight = this.savedMarginRight;
+          document.body.style.overflow = (_a = this.savedOverflow) !== null && _a !== void 0 ? _a : '';
+          document.body.style.marginRight = (_b = this.savedMarginRight) !== null && _b !== void 0 ? _b : '';
           // Restore the previously focused element
-          (_b = (_a = this.savedActiveElement) === null || _a === void 0 ? void 0 : _a.focus) === null || _b === void 0 ? void 0 : _b.call(_a);
+          (_d = (_c = this.savedActiveElement) === null || _c === void 0 ? void 0 : _c.focus) === null || _d === void 0 ? void 0 : _d.call(_c);
           // Remove all children
-          el.innerHTML = '';
+          element.innerHTML = '';
           this.state = 'closed';
       }
       handleEvent(ev) {
@@ -667,7 +799,6 @@ ul.menu-container > li[aria-haspopup=true].active::after {
                   this.close();
                   ev.preventDefault();
                   ev.stopPropagation();
-                  return;
               }
               else if (ev.target === document &&
                   (ev.type === 'touchmove' || ev.type === 'scroll')) {
@@ -675,7 +806,6 @@ ul.menu-container > li[aria-haspopup=true].active::after {
                   this.close();
                   ev.preventDefault();
                   ev.stopPropagation();
-                  return;
               }
           }
       }
@@ -696,7 +826,7 @@ ul.menu-container > li[aria-haspopup=true].active::after {
       if (placement === 'middle') {
           return pos - length / 2;
       }
-      else if ((placement === 'start' && dir === 'ltr') ||
+      if ((placement === 'start' && dir === 'ltr') ||
           (placement === 'end' && dir === 'rtl') ||
           placement === 'top' ||
           placement === 'left') {
@@ -708,7 +838,7 @@ ul.menu-container > li[aria-haspopup=true].active::after {
       if (placement === 'middle') {
           return pos - length / 2;
       }
-      else if ((placement === 'start' && dir === 'ltr') ||
+      if ((placement === 'start' && dir === 'ltr') ||
           (placement === 'end' && dir === 'rtl') ||
           placement === 'top' ||
           placement === 'left') {
@@ -726,23 +856,23 @@ ul.menu-container > li[aria-haspopup=true].active::after {
    * If the element still overflows, adjust its location moving it up and to the
    * left as necessary until it fits (and adjusting its width/height as a result)
    */
-  function fitInViewport(el, options) {
+  function fitInViewport(element, options) {
       var _a, _b, _c;
-      const dir = (_a = getComputedDir(el)) !== null && _a !== void 0 ? _a : 'ltr';
+      const dir = (_a = getComputedDir(element)) !== null && _a !== void 0 ? _a : 'ltr';
       // Reset any location, so we can get the natural width/height
-      el.style.display = 'block';
-      el.style.position = 'absolute';
-      el.style.left = 'auto';
-      el.style.top = 'auto';
-      el.style.right = 'auto';
-      el.style.bottom = 'auto';
-      el.style.height = 'auto';
-      el.style.width = 'auto';
-      const elementBounds = el.getBoundingClientRect();
+      element.style.display = 'block';
+      element.style.position = 'absolute';
+      element.style.left = 'auto';
+      element.style.top = 'auto';
+      element.style.right = 'auto';
+      element.style.bottom = 'auto';
+      element.style.height = 'auto';
+      element.style.width = 'auto';
+      const elementBounds = element.getBoundingClientRect();
       //
       // Vertical positioning
       //
-      const maxHeight = isFinite(options.maxHeight)
+      const maxHeight = Number.isFinite(options.maxHeight)
           ? Math.min(options.maxHeight, window.innerHeight)
           : window.innerHeight;
       let height = Math.min(maxHeight, (_b = options.height) !== null && _b !== void 0 ? _b : elementBounds.height);
@@ -758,19 +888,19 @@ ul.menu-container > li[aria-haspopup=true].active::after {
               top = undefined;
           }
       }
-      if (!isFinite(top)) {
+      if (!Number.isFinite(top)) {
           // Move element as high as possible
           top = Math.max(8, window.innerHeight - 8 - height);
           if (8 + height > window.innerHeight - 8) {
               // Still doesn't fit, we'll clamp it
-              el.style.bottom = '8px';
+              element.style.bottom = '8px';
           }
       }
       height = Math.min(top + height, window.innerHeight - 8) - top;
       //
       // Horizontal positioning
       //
-      const maxWidth = isFinite(options.maxWidth)
+      const maxWidth = Number.isFinite(options.maxWidth)
           ? Math.min(options.maxWidth, window.innerWidth)
           : window.innerWidth;
       let width = Math.min(maxWidth, (_c = options.width) !== null && _c !== void 0 ? _c : elementBounds.width);
@@ -786,19 +916,19 @@ ul.menu-container > li[aria-haspopup=true].active::after {
               left = undefined;
           }
       }
-      if (!isFinite(left)) {
+      if (!Number.isFinite(left)) {
           // Move element as high as possible
           left = Math.max(8, window.innerWidth - 8 - width);
           if (8 + width > window.innerWidth - 8) {
               // Still doesn't fit, we'll clamp it
-              el.style.right = '8px';
+              element.style.right = '8px';
           }
       }
       width = Math.min(left + width, window.innerWidth - 8) - left;
-      el.style.left = `${Math.round(left).toString()}px`;
-      el.style.top = `${Math.round(top).toString()}px`;
-      el.style.height = `${Math.round(height).toString()}px`;
-      el.style.width = `${Math.round(width).toString()}px`;
+      element.style.left = `${Math.round(left).toString()}px`;
+      element.style.top = `${Math.round(top).toString()}px`;
+      element.style.height = `${Math.round(height).toString()}px`;
+      element.style.width = `${Math.round(width).toString()}px`;
   }
 
   /**
@@ -843,7 +973,7 @@ ul.menu-container > li[aria-haspopup=true].active::after {
               }
           }
           else if (event.type === 'pointerup') {
-              // when modal, the items are activated on click,
+              // When modal, the items are activated on click,
               // so ignore mouseup
               if (this.parentMenu.rootMenu.state !== 'modal') {
                   this.select(keyboardModifiersFromEvent(event));
@@ -871,7 +1001,9 @@ ul.menu-container > li[aria-haspopup=true].active::after {
                   this.active = false;
                   setTimeout(() => {
                       this.parentMenu.rootMenu.hide();
-                      setTimeout(() => this.dispatchSelect(kbd), 120);
+                      setTimeout(() => {
+                          this.dispatchSelect(kbd);
+                      }, 120);
                   }, 120);
               }, 120);
           }, 120);
@@ -881,20 +1013,26 @@ ul.menu-container > li[aria-haspopup=true].active::after {
        * This delay improves targeting of submenus with the mouse.
        */
       openSubmenu(kbd, options) {
-          var _a;
+          var _a, _b, _c;
+          if (!this.submenu || !this.element)
+              return;
           if ((_a = options === null || options === void 0 ? void 0 : options.withDelay) !== null && _a !== void 0 ? _a : false) {
-              this.parentMenu.rootMenu.scheduleOperation(() => this.openSubmenu(kbd));
+              this.parentMenu.rootMenu.scheduleOperation(() => {
+                  this.openSubmenu(kbd);
+              });
               return;
           }
           const bounds = this.element.getBoundingClientRect();
           this.submenu.show({
               location: [bounds.right, bounds.top - 4],
               alternateLocation: [bounds.left, bounds.top - 4],
-              parent: this.parentMenu.rootMenu.element.parentNode,
+              parent: (_c = (_b = this.parentMenu.rootMenu.element) === null || _b === void 0 ? void 0 : _b.parentNode) !== null && _c !== void 0 ? _c : null,
               keyboardModifiers: kbd,
           });
       }
       movingTowardSubmenu(ev) {
+          if (!this.element)
+              return false;
           const lastEv = this.parentMenu.rootMenu.lastMoveEvent;
           if (!lastEv)
               return false;
@@ -983,24 +1121,20 @@ ul.menu-container > li[aria-haspopup=true].active::after {
   class UIMenuItem extends UIElement {
       constructor() {
           super({ template: MENU_ITEM_TEMPLATE, style: MENU_ITEM_STYLE });
-          this.reflectBooleanAttributes([
-              'active',
-              'divider',
-              'disabled',
-              'checked',
-          ]);
-      }
-      set menuItem(value) {
-          this._menuItem = value;
+          this.reflectBooleanAttributes(['active', 'divider', 'disabled', 'checked']);
       }
       get menuItem() {
           return this._menuItem;
       }
+      set menuItem(value) {
+          this._menuItem = value;
+      }
   }
-  if (!window.customElements.get('ui-menu-item')) {
-      window.UIMenuItem = UIMenuItem;
-      window.customElements.define('ui-menu-item', UIMenuItem);
-  }
+  void UIElement.register({
+      tag: 'ui-menu-item',
+      className: 'UIMenuItem',
+      constructor: UIMenuItem,
+  });
 
   /**
    * An instance of `Menu` is a model of a collection of menu items, including
@@ -1022,6 +1156,11 @@ ul.menu-container > li[aria-haspopup=true].active::after {
        */
       constructor(menuItems, options) {
           var _a;
+          this.hasCheckbox = false; // If true, has at least one checkbox menu item
+          this.hasRadio = false; // If true, has at least one radio menu item
+          this._element = null;
+          this._menuItems = [];
+          this._activeMenuItem = null;
           this.parentMenu = (_a = options === null || options === void 0 ? void 0 : options.parentMenu) !== null && _a !== void 0 ? _a : null;
           this._assignedContainer = options === null || options === void 0 ? void 0 : options.assignedContainer;
           this._menuItemsTemplate = menuItems;
@@ -1038,8 +1177,7 @@ ul.menu-container > li[aria-haspopup=true].active::after {
           }
       }
       get rootMenu() {
-          var _a;
-          return (_a = this.parentMenu) === null || _a === void 0 ? void 0 : _a.rootMenu;
+          return this.parentMenu.rootMenu;
       }
       dispatchEvent(ev) {
           return this.rootMenu.dispatchEvent(ev);
@@ -1054,47 +1192,56 @@ ul.menu-container > li[aria-haspopup=true].active::after {
       updateMenu(keyboardModifiers) {
           var _a, _b;
           // Save the current menu
-          const elem = this._element;
-          let saveCurrentItem;
-          let left;
-          let top;
+          const element = this._element;
+          let saveCurrentItem = -1;
+          let left = 0;
+          let top = 0;
           let parent;
-          if (elem) {
+          if (element) {
               // If there is a cached element for this menu,
               // remove it (but save its state)
-              saveCurrentItem = this._menuItems.indexOf(this.activeMenuItem);
-              parent = elem.parentNode;
-              left = elem.style.left;
-              top = elem.style.top;
-              parent === null || parent === void 0 ? void 0 : parent.removeChild(elem);
+              saveCurrentItem = this.activeMenuItem
+                  ? this._menuItems.indexOf(this.activeMenuItem)
+                  : -1;
+              parent = element.parentNode;
+              left = Number.parseInt(element.style.left);
+              top = Number.parseInt(element.style.top);
+              parent === null || parent === void 0 ? void 0 : parent.removeChild(element);
               this._element = null;
           }
           this._menuItems = [];
           this.hasCheckbox = false;
           this.hasRadio = false;
           if (this._menuItemsTemplate) {
-              this._menuItemsTemplate.forEach((x) => this.appendMenuItem(x, keyboardModifiers));
+              for (const x of this._menuItemsTemplate) {
+                  this.appendMenuItem(x, keyboardModifiers);
+              }
           }
           // Add menu-item-elements
           if ((_a = this.menuHost) === null || _a === void 0 ? void 0 : _a.shadowRoot) {
-              const itemElements = this.menuHost.shadowRoot
-                  .querySelector('slot')
-                  .assignedElements()
-                  .filter((x) => x.tagName === 'UI-MENU-ITEM');
-              Array.from(itemElements).forEach((x) => this.appendMenuItem(x, keyboardModifiers));
+              const slot = this.menuHost.shadowRoot.querySelector('slot');
+              if (slot) {
+                  const itemElements = slot
+                      .assignedElements()
+                      .filter((x) => x.tagName === 'UI-MENU-ITEM');
+                  for (const el of itemElements) {
+                      this.appendMenuItem(el, keyboardModifiers);
+                  }
+              }
           }
           this.hasCheckbox = this._menuItems.some((x) => x.type === 'checkbox');
           this.hasRadio = this._menuItems.some((x) => x.type === 'radio');
-          if (elem) {
+          if (element) {
               // If there was a previous version of the menu,
               // restore it and its state
               parent === null || parent === void 0 ? void 0 : parent.appendChild(this.element);
               fitInViewport(this.element, {
-                  location: [parseInt(left), parseInt(top)],
+                  location: [left, top],
                   verticalPos: 'bottom',
                   horizontalPos: 'right',
               });
-              this.activeMenuItem = this.menuItems[saveCurrentItem];
+              this.activeMenuItem =
+                  saveCurrentItem >= 0 ? this.menuItems[saveCurrentItem] : null;
               if ((_b = this.activeMenuItem) === null || _b === void 0 ? void 0 : _b.submenu) {
                   this.activeMenuItem.openSubmenu(keyboardModifiers);
               }
@@ -1117,13 +1264,13 @@ ul.menu-container > li[aria-haspopup=true].active::after {
       get firstMenuItem() {
           let result = 0;
           let found = false;
-          const menuItems = this.menuItems;
+          const { menuItems } = this;
           while (!found && result <= menuItems.length - 1) {
               const item = menuItems[result];
               found = item.type !== 'divider' && !item.hidden && !item.disabled;
               result += 1;
           }
-          return !found ? null : menuItems[result - 1];
+          return found ? menuItems[result - 1] : null;
       }
       /** Last activable menu item */
       get lastMenuItem() {
@@ -1134,7 +1281,7 @@ ul.menu-container > li[aria-haspopup=true].active::after {
               found = item.type !== 'divider' && !item.hidden && !item.disabled;
               result -= 1;
           }
-          return !found ? null : this.menuItems[result + 1];
+          return found ? this.menuItems[result + 1] : null;
       }
       /**
        * The active menu is displayed on a colored background.
@@ -1149,7 +1296,7 @@ ul.menu-container > li[aria-haspopup=true].active::after {
        * Call `item.submenu.openSubmenu()` to open the submenu.
        */
       set activeMenuItem(value) {
-          var _a, _b, _c, _d, _e;
+          var _a, _b, _c, _d, _e, _f, _g;
           (_a = this.parentMenu) === null || _a === void 0 ? void 0 : _a.rootMenu.cancelDelayedOperation();
           if (value !== this._activeMenuItem) {
               // Remove previously active element
@@ -1160,7 +1307,7 @@ ul.menu-container > li[aria-haspopup=true].active::after {
                   (_b = item.submenu) === null || _b === void 0 ? void 0 : _b.hide();
               }
               if (value === null || value === void 0 ? void 0 : value.hidden) {
-                  this._activeMenuItem = undefined;
+                  this._activeMenuItem = null;
                   return;
               }
               this._activeMenuItem = value;
@@ -1169,19 +1316,22 @@ ul.menu-container > li[aria-haspopup=true].active::after {
                   value.active = true;
           }
           if (value) {
-              value.element.focus();
+              (_c = value.element) === null || _c === void 0 ? void 0 : _c.focus();
           }
           else {
-              (_c = this._element) === null || _c === void 0 ? void 0 : _c.focus();
+              (_d = this._element) === null || _d === void 0 ? void 0 : _d.focus();
           }
           // Update secondary state of parent
-          (_e = (_d = this.parentMenu) === null || _d === void 0 ? void 0 : _d.activeMenuItem) === null || _e === void 0 ? void 0 : _e.element.classList.toggle('is-submenu-open', !!value);
+          (_g = (_f = (_e = this.parentMenu) === null || _e === void 0 ? void 0 : _e.activeMenuItem) === null || _f === void 0 ? void 0 : _f.element) === null || _g === void 0 ? void 0 : _g.classList.toggle('is-submenu-open', Boolean(value));
       }
       nextMenuItem(dir) {
           if (!this._activeMenuItem && dir > 0)
               return this.firstMenuItem;
           if (!this._activeMenuItem && dir < 0)
               return this.lastMenuItem;
+          if (!this.firstMenuItem || !this.lastMenuItem || !this._activeMenuItem) {
+              return null;
+          }
           const first = this._menuItems.indexOf(this.firstMenuItem);
           const last = this._menuItems.indexOf(this.lastMenuItem);
           let found = false;
@@ -1207,6 +1357,7 @@ ul.menu-container > li[aria-haspopup=true].active::after {
           return Menu._collator;
       }
       findMenuItem(text) {
+          var _a;
           const candidates = this._menuItems.filter((x) => x.type !== 'divider' && !x.hidden && !x.disabled);
           if (candidates.length === 0)
               return null;
@@ -1214,10 +1365,10 @@ ul.menu-container > li[aria-haspopup=true].active::after {
           if (last < 0)
               return null;
           // Find a "contain" match
-          let result;
+          let result = null;
           let i = 0;
           while (i < last && !result) {
-              result = candidates.find((x) => Menu.collator.compare(text, x.label.substr(i, text.length)) === 0);
+              result = (_a = candidates.find((x) => Menu.collator.compare(text, x.label.substr(i, text.length)) === 0)) !== null && _a !== void 0 ? _a : null;
               i++;
           }
           return result;
@@ -1234,11 +1385,10 @@ ul.menu-container > li[aria-haspopup=true].active::after {
           // Remove all items
           ul.textContent = '';
           // Add back all necessary items (after they've been updated if applicable)
-          this._menuItems.forEach((x) => {
-              const elem = x.element;
-              if (elem)
-                  ul.appendChild(elem);
-          });
+          for (const { element } of this._menuItems) {
+              if (element)
+                  ul.append(element);
+          }
           (_a = ul.querySelector('li:first-of-type')) === null || _a === void 0 ? void 0 : _a.setAttribute('tabindex', '0');
           return ul;
       }
@@ -1282,7 +1432,7 @@ ul.menu-container > li[aria-haspopup=true].active::after {
           var _a, _b;
           // Hide any of our child submenus
           this.openSubmenu = null;
-          this.activeMenuItem = undefined;
+          this.activeMenuItem = null;
           // Notify our parent
           if (this.parentMenu) {
               this.parentMenu.openSubmenu = null;
@@ -1310,15 +1460,11 @@ ul.menu-container > li[aria-haspopup=true].active::after {
       insertMenuItem(pos, menuItem, keyboardModifiers) {
           if (pos < 0)
               pos = Math.max(0, this._menuItems.length - 1);
-          let item;
-          if (menuItem instanceof UIMenuItem) {
-              item = new MenuItemFromElement(menuItem, this);
-          }
-          else {
-              item = new MenuItemFromTemplate(menuItem, this, {
-                  keyboardModifiers: keyboardModifiers,
+          const item = menuItem instanceof UIMenuItem
+              ? new MenuItemFromElement(menuItem, this)
+              : new MenuItemFromTemplate(menuItem, this, {
+                  keyboardModifiers,
               });
-          }
           this._menuItems.splice(pos + 1, 0, item);
       }
   }
@@ -1334,8 +1480,8 @@ ul.menu-container > li[aria-haspopup=true].active::after {
       if (typeof value === 'string') {
           return value;
       }
-      else if (typeof value === 'function') {
-          return value(item, options.keyboardModifiers);
+      if (typeof value === 'function') {
+          return value(item, options === null || options === void 0 ? void 0 : options.keyboardModifiers);
       }
       return undefined;
   }
@@ -1348,6 +1494,7 @@ ul.menu-container > li[aria-haspopup=true].active::after {
       constructor(template, parentMenu, options) {
           var _a, _b, _c, _d;
           super(parentMenu);
+          this._element = null;
           this.parentMenu = parentMenu;
           this._hidden = (_a = evalToBoolean(template, template.hidden, options === null || options === void 0 ? void 0 : options.keyboardModifiers)) !== null && _a !== void 0 ? _a : false;
           this._disabled = (_b = evalToBoolean(template, template.disabled, options === null || options === void 0 ? void 0 : options.keyboardModifiers)) !== null && _b !== void 0 ? _b : false;
@@ -1366,22 +1513,19 @@ ul.menu-container > li[aria-haspopup=true].active::after {
                   parentMenu,
               });
           }
+          else if (template.type === undefined && template.checked !== undefined) {
+              this._type = 'checkbox';
+          }
           else {
-              if (typeof template.type === 'undefined' &&
-                  typeof template.checked !== 'undefined') {
-                  this._type = 'checkbox';
-              }
-              else {
-                  this._type = (_d = template.type) !== null && _d !== void 0 ? _d : 'normal';
-              }
+              this._type = (_d = template.type) !== null && _d !== void 0 ? _d : 'normal';
           }
       }
       get type() {
           return this._type;
       }
       get label() {
-          var _a;
-          return (_a = this._label) !== null && _a !== void 0 ? _a : this.ariaLabel;
+          var _a, _b;
+          return (_b = (_a = this._label) !== null && _a !== void 0 ? _a : this.ariaLabel) !== null && _b !== void 0 ? _b : '';
       }
       get hidden() {
           return this._hidden;
@@ -1418,7 +1562,7 @@ ul.menu-container > li[aria-haspopup=true].active::after {
           }
           if (this.checked) {
               li.setAttribute('aria-checked', 'true');
-              li.appendChild(CHECKMARK_TEMPLATE.content.cloneNode(true));
+              li.append(CHECKMARK_TEMPLATE.content.cloneNode(true));
           }
           if (this.submenu) {
               li.setAttribute('aria-haspopup', 'true');
@@ -1444,19 +1588,24 @@ ul.menu-container > li[aria-haspopup=true].active::after {
                   ? 'label indent'
                   : 'label';
           if (!this.disabled) {
-              span.addEventListener('click', (ev) => this.select(keyboardModifiersFromEvent(ev)));
+              span.addEventListener('click', (ev) => {
+                  this.select(keyboardModifiersFromEvent(ev));
+              });
           }
-          li.appendChild(span);
+          li.append(span);
           if (this.submenu) {
-              li.appendChild(CHEVRON_RIGHT_TEMPLATE.content.cloneNode(true));
+              li.append(CHEVRON_RIGHT_TEMPLATE.content.cloneNode(true));
           }
           return li;
       }
       get active() {
-          return this.element.classList.contains('active');
+          var _a, _b;
+          return (_b = (_a = this.element) === null || _a === void 0 ? void 0 : _a.classList.contains('active')) !== null && _b !== void 0 ? _b : false;
       }
-      set active(val) {
-          if (val) {
+      set active(value) {
+          if (!this.element)
+              return;
+          if (value) {
               this.element.classList.add('active');
           }
           else {
@@ -1488,21 +1637,22 @@ ul.menu-container > li[aria-haspopup=true].active::after {
   }
   class MenuItemFromElement extends MenuItem {
       constructor(element, parentMenu) {
+          var _a;
           super(parentMenu);
+          // The <li> is cached
+          this._cachedElement = null;
           this.parentMenu = parentMenu;
           this._sourceElement = element;
           element.menuItem = this;
           // Read a <ui-submenu> element if there is one
           if (element.shadowRoot) {
-              const submenuElements = element.shadowRoot
-                  .querySelector('slot')
-                  .assignedElements()
-                  .filter((x) => x.tagName === 'UI-SUBMENU');
-              console.assert((submenuElements === null || submenuElements === void 0 ? void 0 : submenuElements.length) <= 1, 'Expected no more than one submenu');
-              if (submenuElements && submenuElements.length >= 1) {
+              const submenuElements = (_a = element.shadowRoot
+                  .querySelector('slot')) === null || _a === void 0 ? void 0 : _a.assignedElements().filter((x) => x.tagName === 'UI-SUBMENU');
+              console.assert(submenuElements && submenuElements.length <= 1, 'Expected no more than one submenu');
+              if (submenuElements && submenuElements.length > 0) {
                   this.submenu = new Submenu({
                       host: submenuElements[0],
-                      parentMenu: parentMenu,
+                      parentMenu,
                   });
               }
           }
@@ -1522,12 +1672,12 @@ ul.menu-container > li[aria-haspopup=true].active::after {
           return this._sourceElement.hasAttribute('hidden');
       }
       set hidden(value) {
-          var _a;
+          var _a, _b;
           if (value) {
               (_a = this._sourceElementClone) === null || _a === void 0 ? void 0 : _a.setAttribute('hidden', '');
           }
           else {
-              this._sourceElementClone.removeAttribute('hidden');
+              (_b = this._sourceElementClone) === null || _b === void 0 ? void 0 : _b.removeAttribute('hidden');
           }
       }
       get disabled() {
@@ -1535,6 +1685,8 @@ ul.menu-container > li[aria-haspopup=true].active::after {
       }
       set disabled(value) {
           var _a, _b;
+          if (!this._cachedElement)
+              return;
           if (value) {
               (_a = this._sourceElementClone) === null || _a === void 0 ? void 0 : _a.setAttribute('disabled', '');
               addPart(this._cachedElement, 'disabled');
@@ -1549,6 +1701,8 @@ ul.menu-container > li[aria-haspopup=true].active::after {
       }
       set checked(value) {
           var _a, _b;
+          if (!this._cachedElement)
+              return;
           if (value) {
               (_a = this._sourceElementClone) === null || _a === void 0 ? void 0 : _a.setAttribute('checked', '');
               addPart(this._cachedElement, 'checked');
@@ -1574,11 +1728,13 @@ ul.menu-container > li[aria-haspopup=true].active::after {
           var _a, _b;
           return (_b = (_a = this._cachedElement) === null || _a === void 0 ? void 0 : _a.classList.contains('active')) !== null && _b !== void 0 ? _b : false;
       }
-      set active(val) {
+      set active(value) {
           var _a, _b, _c, _d;
+          if (!this._cachedElement)
+              return;
           // For the active attribute, set the value on the sourced element
           // (the <ui-menu-item>)
-          if (val) {
+          if (value) {
               (_a = this._cachedElement) === null || _a === void 0 ? void 0 : _a.classList.add('active');
               addPart(this._cachedElement, 'active');
               (_b = this._sourceElementClone) === null || _b === void 0 ? void 0 : _b.setAttribute('active', '');
@@ -1612,7 +1768,7 @@ ul.menu-container > li[aria-haspopup=true].active::after {
           }
           if (this.checked) {
               li.setAttribute('aria-checked', 'true');
-              li.appendChild(CHECKMARK_TEMPLATE.content.cloneNode(true));
+              li.append(CHECKMARK_TEMPLATE.content.cloneNode(true));
           }
           if (this.submenu) {
               li.setAttribute('aria-haspopup', 'true');
@@ -1628,12 +1784,14 @@ ul.menu-container > li[aria-haspopup=true].active::after {
               li.addEventListener('pointerup', this);
           }
           if (!this.disabled) {
-              li.addEventListener('click', (ev) => this.select(keyboardModifiersFromEvent(ev)));
+              li.addEventListener('click', (ev) => {
+                  this.select(keyboardModifiersFromEvent(ev));
+              });
           }
           this._sourceElementClone = this._sourceElement.cloneNode(true);
-          li.appendChild(this._sourceElementClone);
+          li.append(this._sourceElementClone);
           if (this.submenu) {
-              li.appendChild(CHEVRON_RIGHT_TEMPLATE.content.cloneNode(true));
+              li.append(CHEVRON_RIGHT_TEMPLATE.content.cloneNode(true));
           }
           return li;
       }
@@ -1644,10 +1802,11 @@ ul.menu-container > li[aria-haspopup=true].active::after {
           return this._cachedElement;
       }
       dispatchSelect(kbd) {
+          var _a;
           const ev = new CustomEvent('select', {
               detail: {
                   keyboardModifiers: kbd,
-                  id: this._sourceElement.getAttribute('id'),
+                  id: (_a = this._sourceElement.getAttribute('id')) !== null && _a !== void 0 ? _a : '',
                   label: this.label,
                   element: this._sourceElement,
               },
@@ -1669,16 +1828,20 @@ ul.menu-container > li[aria-haspopup=true].active::after {
           this.source = options.host;
       }
       get element() {
+          var _a;
           if (this._element)
               return this._element;
           const clone = this.source.cloneNode(true);
-          // clone.style.display = 'block';
+          // Clone.style.display = 'block';
           clone.importStyle();
-          this.makeElement(clone.shadowRoot.querySelector('ul'));
+          this.makeElement((_a = clone.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector('ul'));
           this._element = clone;
           return clone;
       }
       show(options) {
+          var _a;
+          if (!((_a = this.parentMenu) === null || _a === void 0 ? void 0 : _a.rootMenu))
+              return false;
           return super.show({
               ...options,
               parent: this.parentMenu.rootMenu.scrim,
@@ -1701,15 +1864,22 @@ ul.menu-container > li[aria-haspopup=true].active::after {
        *
        */
       constructor(menuItems, options) {
+          var _a;
           super(menuItems, {
               host: options === null || options === void 0 ? void 0 : options.host,
-              assignedContainer: options === null || options === void 0 ? void 0 : options.assignedElement,
+              assignedContainer: (_a = options === null || options === void 0 ? void 0 : options.assignedElement) !== null && _a !== void 0 ? _a : null,
           });
+          this.typingBufferResetTimer = 0;
+          this.hysteresisTimer = 0;
           this.isDynamic = menuItems.some(isDynamic);
           this.currentKeyboardModifiers = options === null || options === void 0 ? void 0 : options.keyboardModifiers;
           this.typingBuffer = '';
           this.state = 'closed';
-          this._scrim = new Scrim({ onClose: () => this.hide() });
+          this._scrim = new Scrim({
+              onClose: () => {
+                  this.hide();
+              },
+          });
       }
       /**
        * The currently active menu: could be the root menu or a submenu
@@ -1771,9 +1941,12 @@ ul.menu-container > li[aria-haspopup=true].active::after {
                   }
                   else {
                       menu.hide();
-                      const el = menu.parentMenu.activeMenuItem.element;
-                      el.focus();
-                      el.classList.remove('is-submenu-open');
+                      const activeMenu = menu.parentMenu.activeMenuItem;
+                      if (activeMenu) {
+                          const { element } = activeMenu;
+                          element === null || element === void 0 ? void 0 : element.focus();
+                          element === null || element === void 0 ? void 0 : element.classList.remove('is-submenu-open');
+                      }
                   }
                   break;
               case 'ArrowDown':
@@ -1840,7 +2013,7 @@ ul.menu-container > li[aria-haspopup=true].active::after {
               this.lastMoveEvent = event;
           }
           else if (event.type === 'pointerup' && event.target === this.scrim) {
-              if (isFinite(this.rootMenu._openTimestamp) &&
+              if (Number.isFinite(this.rootMenu._openTimestamp) &&
                   Date.now() - this.rootMenu._openTimestamp < 120) {
                   // Hold mode...
                   this.state = 'modal';
@@ -1858,13 +2031,15 @@ ul.menu-container > li[aria-haspopup=true].active::after {
           super.handleEvent(event);
       }
       dispatchEvent(ev) {
+          if (!this.menuHost)
+              return false;
           return this.menuHost.dispatchEvent(ev);
       }
       get scrim() {
           return this._scrim.element;
       }
       connectScrim(root) {
-          const scrim = this.scrim;
+          const { scrim } = this;
           scrim.addEventListener('pointerup', this);
           scrim.addEventListener('contextmenu', this);
           scrim.addEventListener('keydown', this);
@@ -1873,7 +2048,7 @@ ul.menu-container > li[aria-haspopup=true].active::after {
           this._scrim.open({ root });
       }
       disconnectScrim() {
-          const scrim = this.scrim;
+          const { scrim } = this;
           scrim.removeEventListener('pointerup', this);
           scrim.removeEventListener('contextmenu', this);
           scrim.removeEventListener('keydown', this);
@@ -1917,14 +2092,14 @@ ul.menu-container > li[aria-haspopup=true].active::after {
               return;
           }
           this.hysteresisTimer = setTimeout(() => {
-              this.hysteresisTimer = undefined;
+              this.hysteresisTimer = 0;
               fn();
           }, delay);
       }
       cancelDelayedOperation() {
           if (this.hysteresisTimer) {
               clearTimeout(this.hysteresisTimer);
-              this.hysteresisTimer = undefined;
+              this.hysteresisTimer = 0;
           }
       }
       /**
@@ -2019,7 +2194,7 @@ ul.menu-container > li[aria-haspopup=true].active::after {
        * @internal
        */
       handleEvent(event) {
-          var _a, _b;
+          var _a, _b, _c;
           (_a = this.longPressDetector) === null || _a === void 0 ? void 0 : _a.dispose();
           this.longPressDetector = undefined;
           if (event.type === 'contextmenu') {
@@ -2033,9 +2208,8 @@ ul.menu-container > li[aria-haspopup=true].active::after {
           }
           else if (event.type === 'keydown') {
               const evt = event;
-              if (evt.code === 'ContextMenu' ||
-                  (evt.code === 'F10' && evt.shiftKey)) {
-                  // shift+F10 = contextual menu
+              if (evt.code === 'ContextMenu' || (evt.code === 'F10' && evt.shiftKey)) {
+                  // Shift+F10 = contextual menu
                   // Get the center of the parent
                   const bounds = (_b = this.parentElement) === null || _b === void 0 ? void 0 : _b.getBoundingClientRect();
                   if (bounds) {
@@ -2051,18 +2225,17 @@ ul.menu-container > li[aria-haspopup=true].active::after {
                   }
               }
           }
-          else if (event.type === 'pointerdown') {
-              if (event.target === this.shadowRoot.host.parentNode) {
-                  const pt = eventLocation(event);
-                  this.longPressDetector = new LongPressDetector(event, () => {
-                      this.show({
-                          location: pt,
-                          keyboardModifiers: keyboardModifiersFromEvent(event),
-                      });
+          else if (event.type === 'pointerdown' &&
+              event.target === ((_c = this.shadowRoot) === null || _c === void 0 ? void 0 : _c.host.parentNode)) {
+              const pt = eventLocation(event);
+              this.longPressDetector = new LongPressDetector(event, () => {
+                  this.show({
+                      location: pt,
+                      keyboardModifiers: keyboardModifiersFromEvent(event),
                   });
-                  event.preventDefault();
-                  event.stopPropagation();
-              }
+              });
+              event.preventDefault();
+              event.stopPropagation();
           }
       }
       /**
@@ -2073,9 +2246,11 @@ ul.menu-container > li[aria-haspopup=true].active::after {
           super.connectedCallback();
           // Listen for contextual menu in the parent
           const parent = this.parentNode;
-          parent.addEventListener('contextmenu', this);
-          parent.addEventListener('keydown', this);
-          parent.addEventListener('pointerdown', this);
+          if (parent) {
+              parent.addEventListener('contextmenu', this);
+              parent.addEventListener('keydown', this);
+              parent.addEventListener('pointerdown', this);
+          }
       }
       /**
        * Custom elements lifecycle hooks
@@ -2096,9 +2271,9 @@ ul.menu-container > li[aria-haspopup=true].active::after {
       focus() {
           var _a;
           super.focus();
-          if (((_a = this.rootMenu) === null || _a === void 0 ? void 0 : _a.state) !== 'closed') {
+          if (this.rootMenu && this.rootMenu.state !== 'closed') {
               if (this.rootMenu.activeMenuItem) {
-                  this.rootMenu.activeMenuItem.element.focus();
+                  (_a = this.rootMenu.activeMenuItem.element) === null || _a === void 0 ? void 0 : _a.focus();
               }
               else {
                   this.rootMenu.element.focus();
@@ -2116,6 +2291,7 @@ ul.menu-container > li[aria-haspopup=true].active::after {
        * trigger it on click of an item).
        */
       show(options) {
+          var _a, _b;
           if (!this.rootMenu) {
               // Import inline (in the component) style sheet
               this.importStyle();
@@ -2125,8 +2301,8 @@ ul.menu-container > li[aria-haspopup=true].active::after {
               if (!Array.isArray(jsonMenuItems))
                   jsonMenuItems = [];
               this.rootMenu = new RootMenu([...this.templateMenuItems, ...jsonMenuItems], {
-                  host: this.shadowRoot.host,
-                  assignedElement: this.shadowRoot.querySelector('ul'),
+                  host: (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.host,
+                  assignedElement: (_b = this.shadowRoot) === null || _b === void 0 ? void 0 : _b.querySelector('ul'),
               });
           }
           this.style.display = 'block';
@@ -2154,10 +2330,11 @@ ul.menu-container > li[aria-haspopup=true].active::after {
           this.style.display = 'none';
       }
   }
-  if (!window.customElements.get('ui-context-menu')) {
-      window.UIContextMenu = UIContextMenu;
-      window.customElements.define('ui-context-menu', UIContextMenu);
-  }
+  void UIElement.register({
+      tag: 'ui-context-menu',
+      className: 'UIContextMenu',
+      constructor: UIContextMenu,
+  });
 
   class UIPopupMenu extends UIElement {
       constructor(menuItems) {
@@ -2165,8 +2342,12 @@ ul.menu-container > li[aria-haspopup=true].active::after {
               template: MENU_TEMPLATE,
               style: MENU_STYLE,
           });
+          this.position = 'leading';
           this.templateMenuItems = menuItems !== null && menuItems !== void 0 ? menuItems : [];
           this.reflectStringAttribute('position');
+      }
+      get menuItems() {
+          return this.templateMenuItems;
       }
       set menuItems(menuItems) {
           this.templateMenuItems = menuItems;
@@ -2174,13 +2355,11 @@ ul.menu-container > li[aria-haspopup=true].active::after {
               this.rootMenu.menuItemTemplates = menuItems;
           }
       }
-      get menuItems() {
-          return this.templateMenuItems;
-      }
       /**
        * @internal
        */
       handleEvent(event) {
+          var _a, _b;
           if (event.type === 'keydown' && event.target === this.parentElement) {
               const evt = event;
               if (evt.code === 'Return' || evt.code === 'Enter') {
@@ -2192,8 +2371,8 @@ ul.menu-container > li[aria-haspopup=true].active::after {
               }
           }
           else if (event.type === 'pointerdown') {
-              console.assert(this.shadowRoot.host.parentNode === this.parentElement);
-              if (event.target === this.shadowRoot.host.parentNode) {
+              console.assert(((_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.host.parentNode) === this.parentElement);
+              if (event.target === ((_b = this.shadowRoot) === null || _b === void 0 ? void 0 : _b.host.parentNode)) {
                   this.show({
                       keyboardModifiers: keyboardModifiersFromEvent(event),
                   });
@@ -2210,8 +2389,10 @@ ul.menu-container > li[aria-haspopup=true].active::after {
           super.connectedCallback();
           // Listen for contextual menu in the parent
           const parent = this.parentNode;
-          parent.addEventListener('keydown', this);
-          parent.addEventListener('pointerdown', this);
+          if (parent) {
+              parent.addEventListener('keydown', this);
+              parent.addEventListener('pointerdown', this);
+          }
       }
       /**
        * Custom elements lifecycle hooks
@@ -2231,9 +2412,9 @@ ul.menu-container > li[aria-haspopup=true].active::after {
       focus() {
           var _a;
           super.focus();
-          if (((_a = this.rootMenu) === null || _a === void 0 ? void 0 : _a.state) !== 'closed') {
+          if (this.rootMenu && this.rootMenu.state !== 'closed') {
               if (this.rootMenu.activeMenuItem) {
-                  this.rootMenu.activeMenuItem.element.focus();
+                  (_a = this.rootMenu.activeMenuItem.element) === null || _a === void 0 ? void 0 : _a.focus();
               }
               else {
                   this.rootMenu.element.focus();
@@ -2251,7 +2432,7 @@ ul.menu-container > li[aria-haspopup=true].active::after {
        * trigger it on click of an item).
        */
       show(options) {
-          var _a, _b;
+          var _a, _b, _c, _d;
           if (!this.parentElement)
               return;
           if (!this.rootMenu) {
@@ -2263,8 +2444,8 @@ ul.menu-container > li[aria-haspopup=true].active::after {
               if (!Array.isArray(jsonMenuItems))
                   jsonMenuItems = [];
               this.rootMenu = new RootMenu([...this.templateMenuItems, ...jsonMenuItems], {
-                  host: this.shadowRoot.host,
-                  assignedElement: this.shadowRoot.querySelector('ul'),
+                  host: (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.host,
+                  assignedElement: (_b = this.shadowRoot) === null || _b === void 0 ? void 0 : _b.querySelector('ul'),
               });
           }
           this.style.display = 'inline-block';
@@ -2283,11 +2464,11 @@ ul.menu-container > li[aria-haspopup=true].active::after {
           if (this.rootMenu.show({
               ...options,
               location: [
-                  getEdge(bounds, (_a = this.position) !== null && _a !== void 0 ? _a : 'leading', this.computedDir),
+                  getEdge(bounds, (_c = this.position) !== null && _c !== void 0 ? _c : 'leading', this.computedDir),
                   bounds.bottom,
               ],
               alternateLocation: [
-                  getOppositeEdge(bounds, (_b = this.position) !== null && _b !== void 0 ? _b : 'leading', this.computedDir),
+                  getOppositeEdge(bounds, (_d = this.position) !== null && _d !== void 0 ? _d : 'leading', this.computedDir),
                   bounds.bottom,
               ],
               parent: this.shadowRoot,
@@ -2310,18 +2491,19 @@ ul.menu-container > li[aria-haspopup=true].active::after {
        * override that should be very rarely needed.
        */
       hide() {
-          var _a;
+          var _a, _b;
           (_a = this.rootMenu) === null || _a === void 0 ? void 0 : _a.hide();
           this.style.display = 'none';
-          if (this._savedTransform !== 'none') {
-              this.parentElement.style.transform = this._savedTransform;
+          if (this._savedTransform !== 'none' && this.parentElement) {
+              this.parentElement.style.transform = (_b = this._savedTransform) !== null && _b !== void 0 ? _b : 'none';
           }
       }
   }
-  if (!window.customElements.get('ui-popup-menu')) {
-      window.UIPopupMenu = UIPopupMenu;
-      window.customElements.define('ui-popup-menu', UIPopupMenu);
-  }
+  void UIElement.register({
+      tag: 'ui-popup-menu',
+      className: 'UIPopupMenu',
+      constructor: UIPopupMenu,
+  });
 
   /**
    * Use `<ui-submenu>` as a child of a `<ui-menuitem>`.
@@ -2339,16 +2521,38 @@ ul.menu-container > li[aria-haspopup=true].active::after {
           });
       }
   }
-  if (!window.customElements.get('ui-submenu')) {
-      window.UISubmenu = UISubmenu;
-      window.customElements.define('ui-submenu', UISubmenu);
+  void UIElement.register({
+      tag: 'ui-submenu',
+      className: 'UISubmenu',
+      constructor: UISubmenu,
+  });
+
+  /**
+   * To insure that all the web components are ready to use, and in particular
+   * that custom methods on web components can be called, use:
+   * ```
+   * try {
+   *  await ready();
+   * // Ready to use the web components...
+   * } catch (e) {
+   *  // web components are not supported
+   * }
+   * ```
+   *
+   */
+  async function ready() {
+      if (window === null || window === void 0 ? void 0 : window.customElements) {
+          return Promise.all(Object.keys(UIElement.registry).map((x) => window.customElements.whenDefined(x)));
+      }
+      return Promise.reject(new Error('web components not supported'));
   }
 
   exports.UIContextMenu = UIContextMenu;
   exports.UIPopupMenu = UIPopupMenu;
   exports.UISubmenu = UISubmenu;
+  exports.ready = ready;
 
   Object.defineProperty(exports, '__esModule', { value: true });
 
 })));
-//# sourceMappingURL=ui.js.map
+//# sourceMappingURL=web-components.js.map

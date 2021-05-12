@@ -2,12 +2,12 @@ import { KeyboardModifiers } from '../common/events';
 import { Menu, MenuItemTemplate } from './menu-core';
 import { MenuInterface, RootMenuInterface } from './menu-base';
 export declare class RootMenu extends Menu implements RootMenuInterface {
-    lastMoveEvent: PointerEvent;
+    lastMoveEvent?: PointerEvent;
     private typingBufferResetTimer;
     private typingBuffer;
-    private _scrim;
-    private _openTimestamp;
-    private currentKeyboardModifiers;
+    private readonly _scrim;
+    private _openTimestamp?;
+    private currentKeyboardModifiers?;
     private hysteresisTimer;
     /**
      * - 'closed': the menu is not visible
@@ -28,9 +28,9 @@ export declare class RootMenu extends Menu implements RootMenuInterface {
      * display of the menu.
      *
      */
-    constructor(menuItems?: MenuItemTemplate[], options?: {
+    constructor(menuItems: MenuItemTemplate[], options?: {
         host?: Element;
-        assignedElement?: HTMLElement;
+        assignedElement?: HTMLElement | null;
         keyboardModifiers?: KeyboardModifiers;
     });
     /**
@@ -48,7 +48,7 @@ export declare class RootMenu extends Menu implements RootMenuInterface {
     show(options?: {
         location?: [x: number, y: number];
         alternateLocation?: [x: number, y: number];
-        parent?: Node;
+        parent?: Node | null;
         keyboardModifiers?: KeyboardModifiers;
     }): boolean;
     hide(): void;

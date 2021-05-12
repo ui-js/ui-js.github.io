@@ -10,13 +10,13 @@ export declare type MenuItemTemplate = {
     label?: string | ((item: MenuItemTemplate, keyboardModifiers?: KeyboardModifiers) => string);
     ariaLabel?: string | ((item: MenuItemTemplate, keyboardModifiers?: KeyboardModifiers) => string);
     ariaDetails?: string | ((item: MenuItemTemplate, keyboardModifiers?: KeyboardModifiers) => string);
-    submenu: MenuItemTemplate[];
+    submenu?: MenuItemTemplate[];
     hidden?: boolean | ((item: MenuItemTemplate, keyboardModifiers?: KeyboardModifiers) => boolean);
     disabled?: boolean | ((item: MenuItemTemplate, keyboardModifiers?: KeyboardModifiers) => boolean);
     checked?: boolean | ((item: MenuItemTemplate, keyboardModifiers?: KeyboardModifiers) => boolean);
     /** Caller defined id string. Passed to the `onSelect()` hook. */
     id?: string;
-    /** Caller defined data block. Passed to the `onSelect()` hook.*/
+    /** Caller defined data block. Passed to the `onSelect()` hook. */
     data?: any;
 };
 /**
@@ -26,23 +26,23 @@ export declare type MenuItemTemplate = {
  *
  */
 export declare class Menu implements MenuInterface {
-    parentMenu: MenuInterface;
-    protected _element: HTMLElement;
-    protected _menuItems: MenuItem[];
-    private _activeMenuItem;
+    parentMenu: MenuInterface | null;
     isSubmenuOpen: boolean;
     /**
      * The Element from which menu items will be used as template (optional)
      */
-    menuHost: Element;
+    menuHost?: Element;
     hasCheckbox: boolean;
     hasRadio: boolean;
+    protected _element: HTMLElement | null;
+    protected _menuItems: MenuItem[];
+    private _activeMenuItem;
     private _menuItemsTemplate;
     /**
      * Optional, an HTML element to be used as the container for this menu.
      * Used when this maps to a custom element with a <ul> in its template.
      */
-    protected _assignedContainer: HTMLElement;
+    protected _assignedContainer?: HTMLElement | null;
     /**
      * - host: if the menu is inside an element, the host is this element.
      * This is where a set of <ui-menu-item> elements will be read from.
@@ -57,7 +57,7 @@ export declare class Menu implements MenuInterface {
     constructor(menuItems?: MenuItemTemplate[], options?: {
         parentMenu?: MenuInterface;
         host?: Element;
-        assignedContainer?: HTMLElement;
+        assignedContainer?: HTMLElement | null;
     });
     handleEvent(event: Event): void;
     get rootMenu(): RootMenuInterface;
@@ -73,25 +73,25 @@ export declare class Menu implements MenuInterface {
     get menuItems(): MenuItem[];
     set menuItemTemplates(value: MenuItemTemplate[]);
     /** First activable menu item */
-    get firstMenuItem(): MenuItem;
+    get firstMenuItem(): MenuItem | null;
     /** Last activable menu item */
-    get lastMenuItem(): MenuItem;
+    get lastMenuItem(): MenuItem | null;
     /**
      * The active menu is displayed on a colored background.
      */
-    get activeMenuItem(): MenuItem;
+    get activeMenuItem(): MenuItem | null;
     /**
      * Set to undefined to have no active item.
      * Note that setting the active menu item doesn't automatically
      * open the submenu (e.g. when keyboard navigating).
      * Call `item.submenu.openSubmenu()` to open the submenu.
      */
-    set activeMenuItem(value: MenuItem);
-    nextMenuItem(dir: number): MenuItem;
+    set activeMenuItem(value: MenuItem | null);
+    nextMenuItem(dir: number): MenuItem | null;
     static _collator: Intl.Collator;
     static get collator(): Intl.Collator;
-    findMenuItem(text: string): MenuItem;
-    makeElement(container?: HTMLElement): HTMLElement;
+    findMenuItem(text: string): MenuItem | null;
+    makeElement(container?: HTMLElement | null): HTMLElement;
     /**
      * Construct (or return a cached version) of an element representing
      * the items in this menu (model -> view)
@@ -113,14 +113,14 @@ export declare class Menu implements MenuInterface {
      * To open a submenu call openSubmenu() on the item with the submenu
      * or show() on the submenu.
      */
-    set openSubmenu(submenu: MenuInterface);
+    set openSubmenu(submenu: MenuInterface | null);
     appendMenuItem(menuItem: MenuItemTemplate | UIMenuItem, keyboardModifiers?: KeyboardModifiers): void;
     insertMenuItem(pos: number, menuItem: MenuItemTemplate | UIMenuItem, keyboardModifiers?: KeyboardModifiers): void;
 }
-export declare function evalToBoolean(item: MenuItemTemplate, value: boolean | ((item: MenuItemTemplate, keyboardModifiers?: KeyboardModifiers) => boolean), keyboardModifiers?: KeyboardModifiers): boolean;
-export declare function evalToString(item: MenuItemTemplate, value: string | ((item: MenuItemTemplate, keyboardModifiers?: KeyboardModifiers) => string), options: {
+export declare function evalToBoolean(item: MenuItemTemplate, value: boolean | undefined | ((item: MenuItemTemplate, keyboardModifiers?: KeyboardModifiers) => boolean), keyboardModifiers?: KeyboardModifiers): boolean | undefined;
+export declare function evalToString(item: MenuItemTemplate, value: string | undefined | ((item: MenuItemTemplate, keyboardModifiers?: KeyboardModifiers) => string), options?: {
     keyboardModifiers?: KeyboardModifiers;
-}): string;
+}): string | undefined;
 export declare type MenuSelectEvent = {
     keyboardModifiers?: KeyboardModifiers;
     id?: string;
@@ -149,7 +149,7 @@ export declare class MenuItemFromTemplate extends MenuItem {
     submenu?: MenuInterface;
     id?: string;
     data?: any;
-    _element: HTMLElement;
+    _element: HTMLElement | null;
     constructor(template: MenuItemTemplate, parentMenu: MenuInterface, options?: {
         keyboardModifiers?: KeyboardModifiers;
     });
@@ -159,14 +159,14 @@ export declare class MenuItemFromTemplate extends MenuItem {
     get disabled(): boolean;
     private render;
     get active(): boolean;
-    set active(val: boolean);
-    get element(): HTMLElement;
+    set active(value: boolean);
+    get element(): HTMLElement | null;
     dispatchSelect(kbd?: KeyboardModifiers): void;
 }
 export declare class MenuItemFromElement extends MenuItem {
     _sourceElement: UIElement;
-    _sourceElementClone: UIElement;
-    _cachedElement: HTMLElement;
+    _sourceElementClone?: UIElement;
+    _cachedElement: HTMLElement | null;
     constructor(element: UIMenuItem, parentMenu: MenuInterface);
     get type(): 'normal' | 'divider' | 'submenu' | 'checkbox' | 'radio';
     get label(): string;
@@ -179,9 +179,9 @@ export declare class MenuItemFromElement extends MenuItem {
     get divider(): boolean;
     set divider(value: boolean);
     get active(): boolean;
-    set active(val: boolean);
+    set active(value: boolean);
     private render;
-    get element(): HTMLElement;
+    get element(): HTMLElement | null;
     dispatchSelect(kbd?: KeyboardModifiers): void;
 }
 export declare class Submenu extends Menu {

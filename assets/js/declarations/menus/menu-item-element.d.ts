@@ -7,9 +7,9 @@ import { MenuItem } from './menu-base';
  * are rendered by the menu container.
  */
 export declare class UIMenuItem extends UIElement {
-    private _menuItem;
-    set menuItem(value: MenuItem);
-    get menuItem(): MenuItem;
+    private _menuItem?;
+    get menuItem(): MenuItem | undefined;
+    set menuItem(value: MenuItem | undefined);
     constructor();
 }
 export default UIMenuItem;

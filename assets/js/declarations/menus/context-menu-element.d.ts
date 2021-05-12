@@ -51,9 +51,9 @@ import { MenuItemTemplate } from './menu-core';
  *
  */
 export declare class UIContextMenu extends UIElement {
-    private rootMenu;
+    private rootMenu?;
     private templateMenuItems;
-    private longPressDetector;
+    private longPressDetector?;
     constructor(menuItems?: MenuItemTemplate[]);
     set menuItems(menuItems: MenuItemTemplate[]);
     get menuItems(): MenuItemTemplate[];
@@ -99,7 +99,6 @@ export declare class UIContextMenu extends UIElement {
      */
     hide(): void;
 }
-export default UIContextMenu;
 declare global {
     /** @internal */
     export interface Window {

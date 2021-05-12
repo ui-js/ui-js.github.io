@@ -5,16 +5,16 @@ export declare type KeyboardModifiers = {
     meta: boolean;
 };
 export declare class LongPressDetector {
-    private onLongPress;
-    private startPoint;
-    private lastPoint;
-    private timer;
     static DELAY: number;
+    private readonly onLongPress;
+    private readonly startPoint?;
+    private lastPoint?;
+    private timer;
     constructor(triggerEvent: Event, onLongPress: () => void);
     dispose(): void;
     handleEvent(event: Event): void;
 }
-export declare function eventLocation(evt: Event): [x: number, y: number];
+export declare function eventLocation(evt: Event): [x: number, y: number] | undefined;
 export declare function eventPointerCount(evt: Event): number;
 /**
  * When the potential start of a long press event (`pointerdown`)
@@ -23,5 +23,5 @@ export declare function eventPointerCount(evt: Event): number;
  */
 export declare function onLongPress(triggerEvent: Event, fn: () => void): void;
 export declare function keyboardModifiersFromEvent(ev: Event): KeyboardModifiers;
-export declare function equalKeyboardModifiers(a: KeyboardModifiers, b: KeyboardModifiers): boolean;
+export declare function equalKeyboardModifiers(a?: KeyboardModifiers, b?: KeyboardModifiers): boolean;
 export declare function mightProducePrintableCharacter(evt: KeyboardEvent): boolean;

@@ -1,12 +1,12 @@
 export declare class Scrim {
-    private _element;
-    private preventOverlayClose;
-    private onClose;
-    private savedOverflow;
-    private savedMarginRight;
-    private savedActiveElement;
+    private _element?;
+    private readonly preventOverlayClose;
+    private readonly onClose?;
+    private savedOverflow?;
+    private savedMarginRight?;
+    private savedActiveElement?;
     private state;
-    private translucent;
+    private readonly translucent;
     /**
      * - If `options.preventOverlayClose` is false, the scrim is closed if the
      * user clicks on the scrim. That's the behavior for menus, for example.
@@ -23,7 +23,7 @@ export declare class Scrim {
     });
     get element(): HTMLElement;
     open(options: {
-        root?: Node;
+        root?: Node | null;
         child?: HTMLElement;
     }): void;
     close(): void;
@@ -40,7 +40,7 @@ export declare function getOppositeEffectivePos(pos: number, length: number, pla
  * If the element still overflows, adjust its location moving it up and to the
  * left as necessary until it fits (and adjusting its width/height as a result)
  */
-export declare function fitInViewport(el: HTMLElement, options: {
+export declare function fitInViewport(element: HTMLElement, options: {
     location: [x: number, y: number];
     alternateLocation?: [x: number, y: number];
     verticalPos: 'bottom' | 'top' | 'middle' | 'start' | 'end';
